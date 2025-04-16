@@ -83,3 +83,35 @@ const EditableCell = _a => {
     </td>
   );
 };
+const App = () => {
+  const [form] = Form.useForm();
+  const [data, setData] = useState(originData);
+  const [editingKey, setEditingKey] = useState('');
+  const isEditing = record => record.key === editingKey;
+  const edit = record => {
+    form.setFieldsValue(Object.assign({ name: '', age: '', address: '' }, record));
+    setEditingKey(record.key);
+  };
+  const cancel = () => {
+    setEditingKey('');
+  };
+  const save = key =>
+    __awaiter(void 0, void 0, void 0, function* () {
+      try {
+        const row = yield form.validateFields();
+        const newData = [...data];
+        const index = newData.findIndex(item => key === item.key);
+        if (index > -1) {
+          const item = newData[index];
+          newData.splice(index, 1, Object.assign(Object.assign({}, item), row));
+          setData(newData);
+          setEditingKey('');
+        } else {
+          newData.push(row);
+          setData(newData);
+          setEditingKey('');
+        }
+      } catch (errInfo) {
+        console.log('Validate Failed:', errInfo);
+      }
+    });
