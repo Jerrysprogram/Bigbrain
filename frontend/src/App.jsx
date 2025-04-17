@@ -43,7 +43,8 @@ var __rest =
     return t;
   };
 import React, { useState } from 'react';
-import { Form, Input, InputNumber, Popconfirm, Table, Typography } from 'antd';
+import { Form, Input, InputNumber, Popconfirm, Table, Typography, Button } from 'antd';
+import { Link } from 'react-router-dom';
 const originData = Array.from({ length: 100 }).map((_, i) => ({
   key: i.toString(),
   name: `Edward ${i}`,
@@ -171,18 +172,28 @@ const App = () => {
       });
     });
     return (
-      <Form form={form} component={false}>
-        <Table
-          components={{
-            body: { cell: EditableCell },
-          }}
-          bordered
-          dataSource={data}
-          columns={mergedColumns}
-          rowClassName="editable-row"
-          pagination={{ onChange: cancel }}
-        />
-      </Form>
+      <div>
+        <div style={{ marginBottom: 16 }}>
+          <Link to="/login">
+            <Button type="primary" style={{ marginRight: 8 }}>Login</Button>
+          </Link>
+          <Link to="/register">
+            <Button>Register</Button>
+          </Link>
+        </div>
+        <Form form={form} component={false}>
+          <Table
+            components={{
+              body: { cell: EditableCell },
+            }}
+            bordered
+            dataSource={data}
+            columns={mergedColumns}
+            rowClassName="editable-row"
+            pagination={{ onChange: cancel }}
+          />
+        </Form>
+      </div>
     );
   };
   export default App;
