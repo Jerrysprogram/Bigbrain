@@ -5,7 +5,14 @@ import { Link } from 'react-router-dom';
 const gameData = [
   {
     id: 1,
-    title: 'Math Challenge',
+    title: 'Game1',
+    description: 'Test your math skills',
+    cover: 'https://gw.alipayobjects.com/zos/rmsportal/JiqGstEfoWAOHiTxclqi.png',
+    avatar: 'https://api.dicebear.com/7.x/miniavs/svg?seed=1',
+  },
+  {
+    id: 2,
+    title: 'Game2',
     description: 'Test your math skills',
     cover: 'https://gw.alipayobjects.com/zos/rmsportal/JiqGstEfoWAOHiTxclqi.png',
     avatar: 'https://api.dicebear.com/7.x/miniavs/svg?seed=1',
@@ -46,7 +53,7 @@ export default function Dashboard() {
             >
               <Card.Meta
                 avatar={<Avatar src={item.avatar} />}
-                title={<Link to="/games">{item.title}</Link>}
+                title={<Link to={`/games/${item.id}`}>{item.title}</Link>}
                 description={item.description}
               />
             </Card>
