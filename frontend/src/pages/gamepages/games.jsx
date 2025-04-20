@@ -1,5 +1,6 @@
 import { useParams } from 'react-router-dom';
 import { useEffect, useState } from 'react';
+import requests from '../../utills/requests';
 
 export default function Games() {
   const { gameId } = useParams();
@@ -8,13 +9,12 @@ export default function Games() {
   // 打印gameId，帮助调试
   console.log('Current gameId:', gameId);
 
-  // 使用从requests.js获取的游戏数据
+  // 使用封装的 GET 方法获取游戏详情 
   useEffect(() => {
-    if (gameId) {  // 确保gameId存在
-      fetch(`https://jsonplaceholder.typicode.com/users/${gameId}`)
-        .then(response => response.json())
-        .then(data => setGame(data))
-        .catch(error => console.error('Error fetching game:', error));
+    if (gameId) {  // 确保 gameId 存在
+      // 使用requests工具中的GET方法请求后端接口
+      requests.get(`/games/${gameId}`)
+        .then(data => setGame(data));
     }
   }, [gameId]);
 

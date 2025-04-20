@@ -9,7 +9,7 @@ const defaultOptions = {
   },
 };
 
-// 封装 fetch
+// 封装 fetch   不删${BASE_HOST}会报错
 function get(url) {
     // Return Promise
     return (
