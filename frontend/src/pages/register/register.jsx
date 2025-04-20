@@ -1,11 +1,34 @@
 import React from 'react';
-import { Button, Form, Input } from 'antd';
+import { Button, Form, Input, message } from 'antd';
+import requests from '../../utills/requests';
+import { useNavigate } from 'react-router-dom';
 
 // 注册页面组件
 const Register = () => {
+  // 初始化路由导航
+  const navigate = useNavigate();
   const [form] = Form.useForm();
   const onFinish = values => {
     console.log('Received values of form: ', values);
+    const { password, name, email, confirm } = values;
+    if (password !== confirm) {
+      message.error('两次输入的密码不一致!');
+      return;
+    }
+    const data = {
+      email,
+      password,
+      name
+    };
+    // 发起注册请求
+    requests.post('/admin/auth/register', data)
+      .then(res => {
+        // 保存token并提示
+        localStorage.setItem('token', res.token);
+        message.success('Register successfully!');
+        // 跳转到dashboard页面
+        navigate('/dashboard');
+      });
   };
   return (
     <Form
