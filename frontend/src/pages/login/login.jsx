@@ -1,14 +1,10 @@
-export default function Login() {
-  return (
-    <div>
-      <h1>Login</h1>
-    </div>
-  )
-}
 import React from 'react';
+import { Link } from 'react-router-dom';
 import { LockOutlined, UserOutlined } from '@ant-design/icons';
-import { Button, Checkbox, Form, Input, Flex } from 'antd';
-const App = () => {
+import { Button, Checkbox, Form, Input } from 'antd';
+
+// 登录页面组件
+export default function Login() {
   const onFinish = values => {
     console.log('Received values of form: ', values);
   };
@@ -32,21 +28,20 @@ const App = () => {
         <Input prefix={<LockOutlined />} type="password" placeholder="Password" />
       </Form.Item>
       <Form.Item>
-        <Flex justify="space-between" align="center">
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <Form.Item name="remember" valuePropName="checked" noStyle>
             <Checkbox>Remember me</Checkbox>
           </Form.Item>
           <a href="">Forgot password</a>
-        </Flex>
+        </div>
       </Form.Item>
 
       <Form.Item>
         <Button block type="primary" htmlType="submit">
           Log in
         </Button>
-        or <a href="">Register now!</a>
+        or <Link to="/register">Register now!</Link>
       </Form.Item>
     </Form>
   );
-};
-export default App;
+}
