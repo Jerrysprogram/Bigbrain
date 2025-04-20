@@ -13,6 +13,7 @@ const Register = () => {
       name="register"
       onFinish={onFinish}
       style={{ maxWidth: 600 }}
+      requiredMark={false}
     >
       <Form.Item
         name="email"
@@ -27,6 +28,14 @@ const Register = () => {
             message: 'Please input your E-mail!',
           },
         ]}
+      >
+        <Input />
+      </Form.Item>
+
+      <Form.Item
+        name="name"
+        label="name"
+        rules={[{ required: true, message: 'Please input your name!', whitespace: true }]}
       >
         <Input />
       </Form.Item>
@@ -68,14 +77,6 @@ const Register = () => {
         <Input.Password />
       </Form.Item>
 
-      <Form.Item
-        name="nickname"
-        label="Nickname"
-        tooltip="What do you want others to call you?"
-        rules={[{ required: true, message: 'Please input your nickname!', whitespace: true }]}
-      >
-        <Input />
-      </Form.Item>
 
       <Form.Item>
         <Button type="primary" htmlType="submit">
