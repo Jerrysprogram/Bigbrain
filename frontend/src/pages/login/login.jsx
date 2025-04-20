@@ -1,12 +1,30 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { LockOutlined, UserOutlined } from '@ant-design/icons';
-import { Button, Checkbox, Form, Input } from 'antd';
+import { Button, Checkbox, Form, Input, message } from 'antd';
+import requests from '../../utills/requests';
 
 // 登录页面组件
 export default function Login() {
+  // 初始化路由导航
+  const navigate = useNavigate();
   const onFinish = values => {
     console.log('Received values of form: ', values);
+    const { email, password } = values;
+    // 发起登录请求
+    requests.post('/admin/auth/login', { email, password })
+      .then(res => {
+        if (res && res.token) {
+          // 保存token并提示
+          localStorage.setItem('token', res.token);
+          message.success('Login successful!');
+          // 跳转到dashboard页面
+          navigate('/dashboard');
+        } else {
+          // 登录失败时显示错误信息
+          message.error('Invalid email or password');
+        }
+      });
   };
   return (
     <Form
@@ -16,10 +34,10 @@ export default function Login() {
       onFinish={onFinish}
     >
       <Form.Item
-        name="username"
-        rules={[{ required: true, message: 'Please input your Username!' }]}
+        name="email"
+        rules={[{ required: true, message: 'Please input your Email!' }]}
       >
-        <Input prefix={<UserOutlined />} placeholder="Username" />
+        <Input prefix={<UserOutlined />} placeholder="Email" />
       </Form.Item>
       <Form.Item
         name="password"
