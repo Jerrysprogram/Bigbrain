@@ -1,6 +1,10 @@
 import React from 'react';
 import { List, Card, Avatar } from 'antd';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import requests from '../../utills/requests';
+import { ifLogin } from '../../utills/index';
+import { message } from 'antd';
 
 const gameData = [
   {
@@ -20,6 +24,20 @@ const gameData = [
 ];
 
 export default function Dashboard() {
+  
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    // Check if user is logged in
+    const isLoggedIn = ifLogin();
+    if (!isLoggedIn) {
+      // Redirect to login page if not logged in
+      message.warning('No active session detected. Redirecting to login page.', 0.5, () => {
+        navigate('/login');
+      });
+    }
+  }, []);
+
   return (
     <div style={{ 
       padding: '24px',
