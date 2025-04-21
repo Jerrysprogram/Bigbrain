@@ -1,13 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { List, Card, Avatar, Modal, Button, Dropdown, Menu, message, Input } from 'antd';
+import { List, Card, Avatar, Modal, Button, Dropdown, Menu, message, Upload, Form, Input } from 'antd';
 import { Link, useNavigate } from 'react-router-dom';
 import { UserOutlined } from '@ant-design/icons';
 import { ifLogin } from '../../utills/index';
 import requests from '../../utills/requests';
+import { PlusOutlined } from '@ant-design/icons';
 
 export default function Dashboard() {
   const [modalVisible, setModalVisible] = useState(false);
-  const [gameName, setGameName] = useState('');
+  const [form] = Form.useForm();
+  const [fileList, setFileList] = useState([]);
   const [games, setGames] = useState([]);
   const navigate = useNavigate();
 
@@ -16,9 +18,24 @@ export default function Dashboard() {
 
   // 创建游戏
   const handleCreateGame = () => {
-    // TODO: 替换为真实接口: requests.post('/admin/games', { name: gameName })
-    message.success(`Game "${gameName}" created successfully`);
-    setModalVisible(false);
+    form.validateFields().then(values => {
+      // 收集表单数据
+      const payload = { name: values.name, description: values.description || '' };
+      if (fileList.length > 0) {
+        // 使用base64 thumbnail
+        payload.thumbnail = fileList[0].thumbUrl || fileList[0].url;
+      }
+      // 调用后端创建接口
+      requests.post('/admin/games', payload)
+        .then(res => {
+          // 更新列表
+          setGames(prev => [...prev, res.game]);
+          message.success(`Game "${payload.name}" created successfully`);
+          form.resetFields(); setFileList([]);
+          setModalVisible(false);
+        })
+        .catch(err => message.error(`Failed to create game: ${err.message}`));
+    });
   };
 
   // 取消创建游戏
@@ -66,16 +83,39 @@ export default function Dashboard() {
 
       {/* 创建游戏弹窗 */}
       <Modal
-        title="Create Game"
+        title="创建新游戏"
         visible={modalVisible}
+        okText="创建"
+        cancelText="取消"
         onOk={handleCreateGame}
-        onCancel={handleCancel}
+        onCancel={() => { setModalVisible(false); form.resetFields(); setFileList([]);} }
+        destroyOnClose
       >
-        <Input
-          value={gameName}
-          onChange={e => setGameName(e.target.value)}
-          placeholder="Enter game name"
-        />
+        <Form form={form} layout="vertical">
+          <Form.Item label="缩略图 (可选)">
+            <Upload
+              listType="picture-card"
+              fileList={fileList}
+              onChange={({ fileList: newList }) => setFileList(newList)}
+              beforeUpload={file => { const isImg = file.type.startsWith('image/'); if (!isImg) message.error('请上传图片文件'); return false; }}
+            >
+              {fileList.length < 1 && <div><PlusOutlined /><div>上传</div></div>}
+            </Upload>
+          </Form.Item>
+          <Form.Item
+            name="name"
+            label="游戏名称"
+            rules={[{ required: true, message: '请输入游戏名称' }]}
+          >
+            <Input placeholder="请输入游戏名称" />
+          </Form.Item>
+          <Form.Item
+            name="description"
+            label="游戏描述 (可选)"
+          >
+            <Input.TextArea placeholder="请输入游戏描述" allowClear />
+          </Form.Item>
+        </Form>
       </Modal>
 
       {/* 右上角头像 + 下拉菜单 */}
