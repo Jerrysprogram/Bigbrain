@@ -16,26 +16,50 @@ export default function Dashboard() {
   // 显示创建游戏弹窗
   const showCreateGameModal = () => setModalVisible(true);
 
-  // 创建游戏
-  const handleCreateGame = () => {
-    form.validateFields().then(values => {
-      // 收集表单数据
-      const payload = { name: values.name, description: values.description || '' };
-      if (fileList.length > 0) {
-        // 使用base64 thumbnail
-        payload.thumbnail = fileList[0].thumbUrl || fileList[0].url;
-      }
-      // 调用后端创建接口
-      requests.post('/admin/games', payload)
-        .then(res => {
-          // 更新列表
-          setGames(prev => [...prev, res.game]);
-          message.success(`Game "${payload.name}" created successfully`);
-          form.resetFields(); setFileList([]);
-          setModalVisible(false);
-        })
-        .catch(err => message.error(`Failed to create game: ${err.message}`));
-    });
+  // 定义一个函数：从后端获取游戏列表
+  const fetchGames = () => {
+    requests.get('/admin/games')
+      .then(response => setGames(response.games))
+      .catch(err => message.error(`Failed to load games: ${err.message}`));
+  };
+
+  // 登录验证并初次加载游戏列表
+  useEffect(() => {
+    if (!ifLogin()) {
+      message.warning('No active session detected. Redirecting to login page.', 0.5, () => navigate('/login'));
+    } else {
+      fetchGames();
+    }
+  }, []);
+
+  /**
+   * 创建新游戏：更新整个游戏列表
+   * @param {*} _
+   */
+  const handleCreateGame = async () => {
+    try {
+      const values = await form.validateFields();
+      // 构建新游戏对象，不需要手动生成id
+      const newGame = {
+        name: values.name,
+        description: values.description || '',
+        // 如果用户上传了缩略图，取 base64 data
+        thumbnail: fileList.length ? (fileList[0].thumbUrl || fileList[0].url) : undefined,
+        owner: localStorage.getItem('email'),
+        updatedAt: new Date().toISOString(),
+      };
+      // 更新后端的游戏列表
+      const data = { games: [...games, newGame] };
+      await requests.put('/admin/games', data);
+      message.success(`Game "${newGame.name}" created successfully`);
+      // 重新加载列表、重置表单
+      fetchGames();
+      form.resetFields();
+      setFileList([]);
+      setModalVisible(false);
+    } catch (err) {
+      message.error(`Failed to create game: ${err.message}`);
+    }
   };
 
   // 取消创建游戏
@@ -55,22 +79,6 @@ export default function Dashboard() {
       <Menu.Item onClick={handleLogout}>Logout</Menu.Item>
     </Menu>
   );
-
-  // 登录验证：无token则跳转登录
-  useEffect(() => {
-    if (!ifLogin()) {
-      message.warning('No active session detected. Redirecting to login page.', 0.5, () => navigate('/login'));
-    } else {
-      // 已登录则加载游戏列表
-      requests.get('/admin/games')
-        .then(response => {
-          setGames(response.games);
-        })
-        .catch(err => {
-          message.error(`Failed to load games: ${err.message}`);
-        });
-    }
-  }, []);
 
   return (
     <div style={{ padding: '24px', maxWidth: '1200px', margin: '0 auto' }}>
