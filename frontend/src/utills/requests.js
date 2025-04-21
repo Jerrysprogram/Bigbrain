@@ -94,8 +94,8 @@ function put (url, data) {
           }
           return data;
         })
-        // 捕获到错误，显示错误消息
-        .catch(err => message.error(err.message))
+        // 捕获到错误，显示错误消息并重新抛出，以便上层捕获
+        .catch(err => { message.error(err.message); throw err; })
     );
   }
 
