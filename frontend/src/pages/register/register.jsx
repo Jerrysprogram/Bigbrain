@@ -25,6 +25,7 @@ const Register = () => {
       .then(res => {
         // 保存token并提示
         localStorage.setItem('token', res.token);
+        localStorage.setItem('email', values.email);
         message.success('Register successfully!');
         // 跳转到dashboard页面
         navigate('/dashboard');

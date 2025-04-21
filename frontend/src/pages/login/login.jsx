@@ -17,6 +17,7 @@ export default function Login() {
         if (res && res.token) {
           // 保存token并提示
           localStorage.setItem('token', res.token);
+          localStorage.setItem('email', values.email);
           message.success('Login successful!');
           // 跳转到dashboard页面
           navigate('/dashboard');
