@@ -66,6 +66,32 @@ export default function Dashboard() {
     <div style={{ padding: '24px', maxWidth: '1200px', margin: '0 auto' }}>
       <h1>Game List</h1>
 
+      {/* 创建游戏按钮 */}
+      <Button type="primary" onClick={showCreateGameModal} style={{ marginBottom: 16 }}>
+        Create Game
+      </Button>
+
+      {/* 创建游戏弹窗 */}
+      <Modal
+        title="Create Game"
+        visible={modalVisible}
+        onOk={handleCreateGame}
+        onCancel={handleCancel}
+      >
+        <Input
+          value={gameName}
+          onChange={e => setGameName(e.target.value)}
+          placeholder="Enter game name"
+        />
+      </Modal>
+
+      {/* 右上角头像 + 下拉菜单 */}
+      <div style={{ position: 'absolute', top: 24, right: 24 }}>
+        <Dropdown overlay={menu} trigger={['click']}>
+          <Avatar icon={<UserOutlined />} style={{ cursor: 'pointer' }} />
+        </Dropdown>
+      </div>
+
       <List
         grid={{
           gutter: 16,
