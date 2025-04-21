@@ -1,20 +1,32 @@
 import React, { useState, useEffect } from 'react';
-import { List, Card, Avatar, Modal, Button, Dropdown, Menu, message, Upload, Form, Input } from 'antd';
+import { List, Card, Avatar, Modal, Button, Dropdown, Menu, message, Upload, Form, Input, Popconfirm } from 'antd';
 import { Link, useNavigate } from 'react-router-dom';
-import { UserOutlined } from '@ant-design/icons';
+import { UserOutlined, PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
 import { ifLogin } from '../../utills/index';
 import requests from '../../utills/requests';
-import { PlusOutlined } from '@ant-design/icons';
 
 export default function Dashboard() {
   const [modalVisible, setModalVisible] = useState(false);
   const [form] = Form.useForm();
   const [fileList, setFileList] = useState([]);
   const [games, setGames] = useState([]);
+  const [editingGame, setEditingGame] = useState(null);
   const navigate = useNavigate();
 
-  // 显示创建游戏弹窗
-  const showCreateGameModal = () => setModalVisible(true);
+  /**
+   * 打开创建/编辑弹窗
+   */
+  const showCreateGameModal = (game = null) => {
+    setEditingGame(game);
+    if (game) {
+      form.setFieldsValue({ name: game.name, description: game.description });
+      setFileList(game.thumbnail ? [{ uid: '-1', url: game.thumbnail, thumbUrl: game.thumbnail }] : []);
+    } else {
+      form.resetFields();
+      setFileList([]);
+    }
+    setModalVisible(true);
+  };
 
   // 定义一个函数：从后端获取游戏列表
   const fetchGames = () => {
@@ -33,39 +45,47 @@ export default function Dashboard() {
   }, []);
 
   /**
-   * 创建新游戏：更新整个游戏列表
-   * @param {*} _
+   * 弹窗确认：创建或更新游戏
    */
-  const handleCreateGame = async () => {
+  const handleModalOk = async () => {
     try {
       const values = await form.validateFields();
-      // 构建新游戏对象，不需要手动生成id
-      const newGame = {
-        // 生成唯一ID，因为PUT接口需要id
-        id: Date.now(),
+      // 构造游戏对象，新游戏需提供唯一id
+      const base = editingGame || {};
+      const updated = {
+        id: base.id || Date.now(),
         name: values.name,
         description: values.description || '',
-        // 如果用户上传了缩略图，取 base64 data
-        thumbnail: fileList.length ? (fileList[0].thumbUrl || fileList[0].url) : undefined,
-        owner: localStorage.getItem('email'),
+        thumbnail: fileList.length ? (fileList[0].thumbUrl || fileList[0].url) : base.thumbnail,
+        owner: base.owner || localStorage.getItem('email'),
         updatedAt: new Date().toISOString(),
       };
-      // 更新后端的游戏列表
-      const data = { games: [...games, newGame] };
-      await requests.put('/admin/games', data);
-      message.success(`Game "${newGame.name}" created successfully`);
-      // 重新加载列表、重置表单
+      // 更新列表并PUT
+      const newList = editingGame
+        ? games.map(g => (g.id === editingGame.id ? updated : g))
+        : [...games, updated];
+      await requests.put('/admin/games', { games: newList });
+      message.success(editingGame ? 'Game updated successfully' : 'Game created successfully');
+      // 刷新并重置状态
       fetchGames();
       form.resetFields();
       setFileList([]);
+      setEditingGame(null);
       setModalVisible(false);
     } catch (err) {
       message.error(`Failed to create game: ${err.message}`);
     }
   };
 
-  // 取消创建游戏
-  const handleCancel = () => setModalVisible(false);
+  /**
+   * 取消创建/编辑：关闭弹窗并重置状态
+   */
+  const handleCancel = () => {
+    setModalVisible(false);
+    form.resetFields();
+    setFileList([]);
+    setEditingGame(null);
+  };
 
   // 处理退出登录
   const handleLogout = () => {
@@ -87,7 +107,7 @@ export default function Dashboard() {
       <h1>Game List</h1>
 
       {/* 创建游戏按钮 */}
-      <Button type="primary" onClick={showCreateGameModal} style={{ marginBottom: 16 }}>
+      <Button type="primary" onClick={() => showCreateGameModal(null)} style={{ marginBottom: 16 }}>
         Create Game
       </Button>
 
@@ -97,8 +117,8 @@ export default function Dashboard() {
         okText="Create"
         cancelText="Cancel"
         visible={modalVisible}
-        onOk={handleCreateGame}
-        onCancel={() => { setModalVisible(false); form.resetFields(); setFileList([]); }}
+        onOk={handleModalOk}
+        onCancel={handleCancel}
         destroyOnClose
       >
         <Form form={form} layout="vertical">
