@@ -87,6 +87,20 @@ export default function Dashboard() {
     setEditingGame(null);
   };
 
+  /**
+   * 删除游戏：过滤并PUT更新列表
+   */
+  const handleDeleteGame = async (id) => {
+    const newList = games.filter(g => g.id !== id);
+    try {
+      await requests.put('/admin/games', { games: newList });
+      message.success('Game deleted successfully');
+      fetchGames();
+    } catch (err) {
+      message.error(`Failed to delete game: ${err.message}`);
+    }
+  };
+
   // 处理退出登录
   const handleLogout = () => {
     localStorage.removeItem('token');
@@ -191,6 +205,18 @@ export default function Dashboard() {
                   title={<Link to={`/games/${item.id}`}>{item.name}</Link>}
                   description={item.createdAt ? new Date(item.createdAt).toLocaleString() : 'No description available'}
                 />
+                {/* 编辑/删除操作 */}
+                <div style={{ textAlign: 'right', paddingTop: 8 }}>
+                  <EditOutlined style={{ marginRight: 12 }} onClick={() => showCreateGameModal(item)} />
+                  <Popconfirm
+                    title="Are you sure to delete this game?"
+                    onConfirm={() => handleDeleteGame(item.id)}
+                    okText="Yes"
+                    cancelText="No"
+                  >
+                    <DeleteOutlined style={{ color: 'red' }} />
+                  </Popconfirm>
+                </div>
               </Card>
             </List.Item>
           )}
