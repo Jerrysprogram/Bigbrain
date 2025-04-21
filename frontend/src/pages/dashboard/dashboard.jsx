@@ -43,6 +43,15 @@ export default function Dashboard() {
   useEffect(() => {
     if (!ifLogin()) {
       message.warning('No active session detected. Redirecting to login page.', 0.5, () => navigate('/login'));
+    } else {
+      // 已登录则加载游戏列表
+      requests.get('/admin/games')
+        .then(response => {
+          setGames(response.games);
+        })
+        .catch(err => {
+          message.error(`Failed to load games: ${err.message}`);
+        });
     }
   }, []);
 
