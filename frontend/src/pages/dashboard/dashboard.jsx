@@ -41,6 +41,8 @@ export default function Dashboard() {
       const values = await form.validateFields();
       // 构建新游戏对象，不需要手动生成id
       const newGame = {
+        // 生成唯一ID，因为PUT接口需要id
+        id: Date.now(),
         name: values.name,
         description: values.description || '',
         // 如果用户上传了缩略图，取 base64 data
@@ -158,16 +160,16 @@ export default function Dashboard() {
                 style={{ width: '300px', margin: '0 auto' }}
                 cover={
                   <img
-                    alt={item.title}
-                    src={item.cover}
+                    alt={item.name}
+                    src={item.thumbnail}
                     style={{ height: '200px', objectFit: 'cover' }}
                   />
                 }
               >
                 <Card.Meta
-                  avatar={<Avatar src={item.avatar} />}
-                  title={<Link to={`/games/${item.id}`}>{item.title}</Link>}
-                  description={item.description}
+                  avatar={<Avatar icon={<UserOutlined />} />}
+                  title={<Link to={`/games/${item.id}`}>{item.name}</Link>}
+                  description={item.createdAt ? new Date(item.createdAt).toLocaleString() : 'No description available'}
                 />
               </Card>
             </List.Item>
