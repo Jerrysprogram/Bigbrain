@@ -5,26 +5,10 @@ import { UserOutlined } from '@ant-design/icons';
 import { ifLogin } from '../../utills/index';
 import requests from '../../utills/requests';
 
-const gameData = [
-  {
-    id: 1,
-    title: 'Game1',
-    description: 'Test your math skills',
-    cover: 'https://gw.alipayobjects.com/zos/rmsportal/JiqGstEfoWAOHiTxclqi.png',
-    avatar: 'https://api.dicebear.com/7.x/miniavs/svg?seed=1',
-  },
-  {
-    id: 2,
-    title: 'Game2',
-    description: 'Test your math skills',
-    cover: 'https://gw.alipayobjects.com/zos/rmsportal/JiqGstEfoWAOHiTxclqi.png',
-    avatar: 'https://api.dicebear.com/7.x/miniavs/svg?seed=1',
-  },
-];
-
 export default function Dashboard() {
   const [modalVisible, setModalVisible] = useState(false);
   const [gameName, setGameName] = useState('');
+  const [games, setGames] = useState([]);
   const navigate = useNavigate();
 
   // 显示创建游戏弹窗
@@ -92,39 +76,46 @@ export default function Dashboard() {
         </Dropdown>
       </div>
 
-      <List
-        grid={{
-          gutter: 16,
-          xs: 1,
-          sm: 1,
-          md: 1,
-          lg: 1,
-          xl: 1,
-          xxl: 1,
-        }}
-        dataSource={gameData}
-        renderItem={(item) => (
-          <List.Item>
-            <Card
-              hoverable
-              style={{ width: '300px', margin: '0 auto' }}
-              cover={
-                <img
-                  alt={item.title}
-                  src={item.cover}
-                  style={{ height: '200px', objectFit: 'cover' }}
+      {/* 动态渲染游戏列表或无游戏提示 */}
+      {games.length === 0 ? (
+        <div style={{ textAlign: 'center', marginTop: 20 }}>
+          <p>暂时没有游戏，点击"Create Game"创建游戏</p>
+        </div>
+      ) : (
+        <List
+          grid={{
+            gutter: 16,
+            xs: 1,
+            sm: 1,
+            md: 1,
+            lg: 1,
+            xl: 1,
+            xxl: 1,
+          }}
+          dataSource={games}
+          renderItem={(item) => (
+            <List.Item>
+              <Card
+                hoverable
+                style={{ width: '300px', margin: '0 auto' }}
+                cover={
+                  <img
+                    alt={item.title}
+                    src={item.cover}
+                    style={{ height: '200px', objectFit: 'cover' }}
+                  />
+                }
+              >
+                <Card.Meta
+                  avatar={<Avatar src={item.avatar} />}
+                  title={<Link to={`/games/${item.id}`}>{item.title}</Link>}
+                  description={item.description}
                 />
-              }
-            >
-              <Card.Meta
-                avatar={<Avatar src={item.avatar} />}
-                title={<Link to={`/games/${item.id}`}>{item.title}</Link>}
-                description={item.description}
-              />
-            </Card>
-          </List.Item>
-        )}
-      />
+              </Card>
+            </List.Item>
+          )}
+        />
+      )}
     </div>
   );
 }
