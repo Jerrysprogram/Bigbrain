@@ -83,37 +83,38 @@ export default function Dashboard() {
 
       {/* 创建游戏弹窗 */}
       <Modal
-        title="创建新游戏"
+        title="Create New Game"
+        okText="Create"
+        cancelText="Cancel"
         visible={modalVisible}
-        okText="创建"
-        cancelText="取消"
         onOk={handleCreateGame}
-        onCancel={() => { setModalVisible(false); form.resetFields(); setFileList([]);} }
+        onCancel={() => { setModalVisible(false); form.resetFields(); setFileList([]); }}
         destroyOnClose
       >
         <Form form={form} layout="vertical">
-          <Form.Item label="缩略图 (可选)">
+          <Form.Item label="Thumbnail (optional)">
             <Upload
               listType="picture-card"
               fileList={fileList}
               onChange={({ fileList: newList }) => setFileList(newList)}
-              beforeUpload={file => { const isImg = file.type.startsWith('image/'); if (!isImg) message.error('请上传图片文件'); return false; }}
+              beforeUpload={file => { const isImg = file.type.startsWith('image/'); if (!isImg) message.error('Please upload image files only'); return false; }}
+              style={{ width: '100%' }}
             >
-              {fileList.length < 1 && <div><PlusOutlined /><div>上传</div></div>}
+              {fileList.length < 1 && <div><PlusOutlined /><div>Upload</div></div>}
             </Upload>
           </Form.Item>
           <Form.Item
             name="name"
-            label="游戏名称"
-            rules={[{ required: true, message: '请输入游戏名称' }]}
+            label="Game Name"
+            rules={[{ required: true, message: 'Please enter game name' }]}
           >
-            <Input placeholder="请输入游戏名称" />
+            <Input placeholder="Enter game name" />
           </Form.Item>
           <Form.Item
             name="description"
-            label="游戏描述 (可选)"
+            label="Game Description (optional)"
           >
-            <Input.TextArea placeholder="请输入游戏描述" allowClear />
+            <Input.TextArea placeholder="Enter game description" allowClear />
           </Form.Item>
         </Form>
       </Modal>
@@ -128,7 +129,7 @@ export default function Dashboard() {
       {/* 动态渲染游戏列表或无游戏提示 */}
       {games.length === 0 ? (
         <div style={{ textAlign: 'center', marginTop: 20 }}>
-          <p>暂时没有游戏，点击"Create Game"创建游戏</p>
+          <p>No games available. Click "Create Game" to create a new game.</p>
         </div>
       ) : (
         <List
