@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { List, Card, Avatar, Modal, Button, Dropdown, Menu, message, Upload, Form, Input, Popconfirm } from 'antd';
-import { Link, useNavigate } from 'react-router-dom';
+import { List, Card, Avatar, Modal, Button, Dropdown, Menu, message, Upload, Form, Input, Popconfirm, Divider } from 'antd';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import { UserOutlined, PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
 import { ifLogin } from '../../utills/index';
 import requests from '../../utills/requests';
@@ -12,6 +12,9 @@ export default function Dashboard() {
   const [games, setGames] = useState([]);
   const [editingGame, setEditingGame] = useState(null);
   const navigate = useNavigate();
+  const { gameId } = useParams();
+  const [game, setGame] = useState(null);
+  const [questions, setQuestions] = useState([]);
 
   /**
    * 打开创建/编辑弹窗
@@ -43,6 +46,15 @@ export default function Dashboard() {
       fetchGames();
     }
   }, []);
+
+  useEffect(() => {
+    // 从后端拉当前游戏
+    requests.get('/admin/games').then(({ games }) => {
+      const g = games.find(g => g.id === +gameId);
+      setGame(g);
+      setQuestions(g.questions || []);
+    });
+  }, [gameId]);
 
   /**
    * 弹窗确认：创建或更新游戏
@@ -118,7 +130,15 @@ export default function Dashboard() {
 
   return (
     <div style={{ padding: '24px', maxWidth: '1200px', margin: '0 auto' }}>
-      <h1>Game List</h1>
+      <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+        <Button onClick={() => navigate('/dashboard')}>← Back Dashboard</Button>
+        <h1>{game?.name || '加载中…'}</h1>
+        <div>
+          <Button onClick={() => showCreateGameModal(game)}>编辑游戏信息</Button>
+          <Button type="primary" onClick={() => showCreateGameModal(null)}>+ 添加问题</Button>
+        </div>
+      </div>
+      <Divider>问题列表</Divider>
 
       {/* 创建游戏按钮 */}
       <Button type="primary" onClick={() => showCreateGameModal(null)} style={{ marginBottom: 16 }}>
@@ -207,7 +227,9 @@ export default function Dashboard() {
                 />
                 {/* 编辑/删除操作 */}
                 <div style={{ textAlign: 'right', paddingTop: 8 }}>
-                  <EditOutlined style={{ marginRight: 12 }} onClick={() => showCreateGameModal(item)} />
+                  <Link to={`/game/${item.id}`}>
+                    <EditOutlined style={{ cursor: 'pointer' }} />
+                  </Link>
                   <Popconfirm
                     title="Are you sure to delete this game?"
                     onConfirm={() => handleDeleteGame(item.id)}
@@ -224,4 +246,9 @@ export default function Dashboard() {
       )}
     </div>
   );
+}
+
+export async function getGameById(id) {
+  const { games } = await requests.get('/admin/games');
+  return games.find(g => g.id === +id);
 }
