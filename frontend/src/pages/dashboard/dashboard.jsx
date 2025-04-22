@@ -128,71 +128,12 @@ export default function Dashboard() {
     </Menu>
   );
 
-  async function handleDeleteQuestion(qId) {
-    const newQs = questions.filter(q => q.id !== qId);
-    setQuestions(newQs);
-    // 构造整站所有游戏数组或直接替换当前 game.questions
-    const allGames = await requests.get('/admin/games').then(r => r.games);
-    const updatedGames = allGames.map(g =>
-      g.id===+gameId ? { ...g, questions: newQs } : g
-    );
-    await requests.put('/admin/games', { games: updatedGames });
-  }
-
   return (
     <div style={{ padding: '24px', maxWidth: '1200px', margin: '0 auto' }}>
-      <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
-        <Button onClick={() => navigate('/dashboard')}>← Back Dashboard</Button>
-        <h1>{game?.name || '加载中…'}</h1>
-        <div>
-          <Button onClick={() => showCreateGameModal(game)}>编辑游戏信息</Button>
-          <Button type="primary" onClick={() => showCreateGameModal(null)}>+ 添加问题</Button>
-        </div>
-      </div>
-      <Divider>问题列表</Divider>
-
       {/* 创建游戏按钮 */}
       <Button type="primary" onClick={() => showCreateGameModal(null)} style={{ marginBottom: 16 }}>
         Create Game
       </Button>
-
-      {/* 创建游戏弹窗 */}
-      <Modal
-        title="Create New Game"
-        okText="Create"
-        cancelText="Cancel"
-        visible={modalVisible}
-        onOk={handleModalOk}
-        onCancel={handleCancel}
-        destroyOnClose
-      >
-        <Form form={form} layout="vertical">
-          <Form.Item label="Thumbnail (optional)">
-            <Upload
-              listType="picture-card"
-              fileList={fileList}
-              onChange={({ fileList: newList }) => setFileList(newList)}
-              beforeUpload={file => { const isImg = file.type.startsWith('image/'); if (!isImg) message.error('Please upload image files only'); return false; }}
-              style={{ width: '100%' }}
-            >
-              {fileList.length < 1 && <div><PlusOutlined /><div>Upload</div></div>}
-            </Upload>
-          </Form.Item>
-          <Form.Item
-            name="name"
-            label="Game Name"
-            rules={[{ required: true, message: 'Please enter game name' }]}
-          >
-            <Input placeholder="Enter game name" />
-          </Form.Item>
-          <Form.Item
-            name="description"
-            label="Game Description (optional)"
-          >
-            <Input.TextArea placeholder="Enter game description" allowClear />
-          </Form.Item>
-        </Form>
-      </Modal>
 
       {/* 右上角头像 + 下拉菜单 */}
       <div style={{ position: 'absolute', top: 24, right: 24 }}>
@@ -247,7 +188,7 @@ export default function Dashboard() {
                     okText="Yes"
                     cancelText="No"
                   >
-                    <DeleteOutlined style={{ color: 'red' }} />
+                    <DeleteOutlined style={{ color: 'red', marginLeft: 12 }} />
                   </Popconfirm>
                 </div>
               </Card>
@@ -256,24 +197,43 @@ export default function Dashboard() {
         />
       )}
 
-      <Divider>问题列表</Divider>
-      <List
-        dataSource={questions}
-        renderItem={(q, idx) => (
-          <Card title={`问题 ${idx+1}: ${q.text}`} style={{ marginBottom: 12 }}>
-            <div>类型：{q.typeName}</div>
-            <div style={{ float:'right' }}>
-              <Link to={`/game/${gameId}/question/${q.id}`}><EditOutlined /></Link>
-              <Popconfirm
-                title="确认删除该题？"
-                onConfirm={() => handleDeleteQuestion(q.id)}
-              >
-                <DeleteOutlined style={{ color:'red', marginLeft: 12 }} />
-              </Popconfirm>
-            </div>
-          </Card>
-        )}
-      />
+      {/* 创建游戏弹窗 */}
+      <Modal
+        title="Create New Game"
+        okText="Create"
+        cancelText="Cancel"
+        visible={modalVisible}
+        onOk={handleModalOk}
+        onCancel={handleCancel}
+        destroyOnClose
+      >
+        <Form form={form} layout="vertical">
+          <Form.Item label="Thumbnail (optional)">
+            <Upload
+              listType="picture-card"
+              fileList={fileList}
+              onChange={({ fileList: newList }) => setFileList(newList)}
+              beforeUpload={file => { const isImg = file.type.startsWith('image/'); if (!isImg) message.error('Please upload image files only'); return false; }}
+              style={{ width: '100%' }}
+            >
+              {fileList.length < 1 && <div><PlusOutlined /><div>Upload</div></div>}
+            </Upload>
+          </Form.Item>
+          <Form.Item
+            name="name"
+            label="Game Name"
+            rules={[{ required: true, message: 'Please enter game name' }]}
+          >
+            <Input placeholder="Enter game name" />
+          </Form.Item>
+          <Form.Item
+            name="description"
+            label="Game Description (optional)"
+          >
+            <Input.TextArea placeholder="Enter game description" allowClear />
+          </Form.Item>
+        </Form>
+      </Modal>
     </div>
   );
 }
