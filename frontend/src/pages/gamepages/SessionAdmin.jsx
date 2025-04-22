@@ -71,4 +71,55 @@ export default function SessionAdmin() {
     }
   };
 
+  // 停止会话
+  const handleStop = async () => {
+    try {
+      await requests.post(`/admin/game/${gameId}/mutate`, { mutationType: 'END' });
+      message.success('Session stopped');
+      const s = await fetchStatus();
+      if (s && !s.active) await fetchResults();
+    } catch (err) {
+      message.error(`Stop failed: ${err.message}`);
+    }
+  };
 
+  if (loading || !status) {
+    return <Spin tip="Loading session..." />;
+  }
+
+  // 活跃会话界面
+  if (status.active) {
+    const total = status.questions.length;
+    const pos = status.position;
+    return (
+      <div style={{ padding: 24 }}>
+        <h2>Session {sessionId}</h2>
+        <p>Question {pos + 1} of {total}</p>
+        <Space>
+          <Button type="primary" onClick={handleAdvance}>Advance</Button>
+          <Button danger onClick={handleStop}>Stop Session</Button>
+        </Space>
+      </div>
+    );
+  }
+
+  // 会话结束，展示结果
+  // 计算分数
+  const scores = (results || []).map(player => {
+    const score = player.answers.reduce((sum, ans, idx) => sum + (ans.correct ? (status.questions[idx].points || 0) : 0), 0);
+    return { name: player.name, score };
+  });
+  const top5 = scores.sort((a, b) => b.score - a.score).slice(0, 5);
+
+  const columns = [
+    { title: 'Player', dataIndex: 'name', key: 'name' },
+    { title: 'Score', dataIndex: 'score', key: 'score' },
+  ];
+
+  return (
+    <div style={{ padding: 24 }}>
+      <h2>Results for Session {sessionId}</h2>
+      <Table dataSource={top5} columns={columns} rowKey="name" pagination={false} />
+    </div>
+  );
+}
