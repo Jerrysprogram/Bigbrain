@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { List, Card, Avatar, Modal, Button, Dropdown, Menu, message, Upload, Form, Input, Popconfirm, Divider } from 'antd';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { UserOutlined, PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
+import { UserOutlined, PlusOutlined, EditOutlined, DeleteOutlined, CopyOutlined } from '@ant-design/icons';
 import { ifLogin } from '../../utills/index';
 import requests from '../../utills/requests';
 
@@ -15,6 +15,8 @@ export default function Dashboard() {
   const { gameId } = useParams();
   const [game, setGame] = useState(null);
   const [questions, setQuestions] = useState([]);
+  const [sessionModalVisible, setSessionModalVisible] = useState(false);
+  const [newSessionId, setNewSessionId] = useState(null);
 
   /**
    * 打开创建/编辑弹窗
@@ -128,6 +130,19 @@ export default function Dashboard() {
     </Menu>
   );
 
+  // 开始游戏会话
+  const handleStartSession = async (gameId) => {
+    try {
+      const { data } = await requests.post(`/admin/game/${gameId}/mutate`, { mutationType: 'START' });
+      const sessionId = data.sessionId;
+      setNewSessionId(sessionId);
+      setSessionModalVisible(true);
+      fetchGames();
+    } catch (err) {
+      message.error(`Start session failed: ${err.message}`);
+    }
+  };
+
   return (
     <div style={{ padding: '24px', maxWidth: '1200px', margin: '0 auto' }}>
       {/* 创建游戏按钮 */}
@@ -190,6 +205,14 @@ export default function Dashboard() {
                   >
                     <DeleteOutlined style={{ color: 'red', marginLeft: 12 }} />
                   </Popconfirm>
+                  {/* Start Session button */}
+                  {item.active == null ? (
+                    <Button type="primary" size="small" style={{ marginTop: 8 }} onClick={() => handleStartSession(item.id)}>
+                      Start Session
+                    </Button>
+                  ) : (
+                    <div style={{ marginTop: 8 }}><strong>Session ID:</strong> {item.active}</div>
+                  )}
                 </div>
               </Card>
             </List.Item>
@@ -233,6 +256,24 @@ export default function Dashboard() {
             <Input.TextArea placeholder="Enter game description" allowClear />
           </Form.Item>
         </Form>
+      </Modal>
+
+      {/* Session Modal */}
+      <Modal
+        title="Session Started"
+        visible={sessionModalVisible}
+        onCancel={() => setSessionModalVisible(false)}
+        footer={[
+          <Button key="copy" icon={<CopyOutlined />} onClick={() => {
+            const url = `${window.location.origin}/play/join/${newSessionId}`;
+            navigator.clipboard.writeText(url);
+            message.success('Link copied!');
+          }}>Copy Link</Button>,
+          <Button key="close" type="primary" onClick={() => setSessionModalVisible(false)}>Close</Button>
+        ]}
+      >
+        <p><strong>Session ID:</strong> {newSessionId}</p>
+        <Input value={`${window.location.origin}/play/join/${newSessionId}`} readOnly />
       </Modal>
     </div>
   );
