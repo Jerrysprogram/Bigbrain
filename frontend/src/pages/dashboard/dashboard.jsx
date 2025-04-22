@@ -128,6 +128,17 @@ export default function Dashboard() {
     </Menu>
   );
 
+  async function handleDeleteQuestion(qId) {
+    const newQs = questions.filter(q => q.id !== qId);
+    setQuestions(newQs);
+    // 构造整站所有游戏数组或直接替换当前 game.questions
+    const allGames = await requests.get('/admin/games').then(r => r.games);
+    const updatedGames = allGames.map(g =>
+      g.id===+gameId ? { ...g, questions: newQs } : g
+    );
+    await requests.put('/admin/games', { games: updatedGames });
+  }
+
   return (
     <div style={{ padding: '24px', maxWidth: '1200px', margin: '0 auto' }}>
       <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
@@ -244,6 +255,25 @@ export default function Dashboard() {
           )}
         />
       )}
+
+      <Divider>问题列表</Divider>
+      <List
+        dataSource={questions}
+        renderItem={(q, idx) => (
+          <Card title={`问题 ${idx+1}: ${q.text}`} style={{ marginBottom: 12 }}>
+            <div>类型：{q.typeName}</div>
+            <div style={{ float:'right' }}>
+              <Link to={`/game/${gameId}/question/${q.id}`}><EditOutlined /></Link>
+              <Popconfirm
+                title="确认删除该题？"
+                onConfirm={() => handleDeleteQuestion(q.id)}
+              >
+                <DeleteOutlined style={{ color:'red', marginLeft: 12 }} />
+              </Popconfirm>
+            </div>
+          </Card>
+        )}
+      />
     </div>
   );
 }
