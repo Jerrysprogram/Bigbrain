@@ -143,6 +143,24 @@ export default function Dashboard() {
     }
   };
 
+  // 停止游戏会话
+  const handleStopSession = async (gameId, sessionId) => {
+    try {
+      await requests.post(`/admin/game/${gameId}/mutate`, { mutationType: 'END' });
+      message.success('Session stopped successfully');
+      fetchGames();
+      Modal.confirm({
+        title: 'Session Stopped',
+        content: 'Would you like to view results?',
+        okText: 'Yes',
+        cancelText: 'No',
+        onOk: () => navigate(`/session/${sessionId}`),
+      });
+    } catch (err) {
+      message.error(`Stop session failed: ${err.message}`);
+    }
+  };
+
   return (
     <div style={{ padding: '24px', maxWidth: '1200px', margin: '0 auto' }}>
       {/* 创建游戏按钮 */}
@@ -211,7 +229,12 @@ export default function Dashboard() {
                       Start Session
                     </Button>
                   ) : (
-                    <div style={{ marginTop: 8 }}><strong>Session ID:</strong> {item.active}</div>
+                    <div style={{ marginTop: 8 }}>
+                      <strong>Session ID:</strong> {item.active}
+                      <Button type="default" size="small" style={{ marginLeft: 8 }} onClick={() => handleStopSession(item.id, item.active)}>
+                        Stop Session
+                      </Button>
+                    </div>
                   )}
                 </div>
               </Card>
