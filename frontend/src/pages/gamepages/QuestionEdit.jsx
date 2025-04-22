@@ -32,10 +32,10 @@ export default function QuestionEdit() {
       try {
         const { games } = await requests.get('/admin/games');
         const g = games.find(g => g.id === +gameId);
-        if (!g) throw new Error('游戏未找到');
+        if (!g) throw new Error('Game not found');
         setGame(g);
         const q = g.questions.find(q => q.id === +questionId);
-        if (!q) throw new Error('题目未找到');
+        if (!q) throw new Error('Question not found');
         // 初始化 form
         form.setFieldsValue({
           type: q.type,
@@ -50,7 +50,7 @@ export default function QuestionEdit() {
         }
         if (q.video) setVideoUrl(q.video);
       } catch (err) {
-        message.error(`加载失败: ${err.message}`);
+        message.error(`Load failed: ${err.message}`);
       }
     }
     load();
@@ -80,64 +80,70 @@ export default function QuestionEdit() {
         g.id === +gameId ? { ...g, questions: newQuestions } : g
       );
       await requests.put('/admin/games', { games: updatedAll });
-      message.success('题目已保存');
+      message.success('Question saved successfully');
       navigate(`/game/${gameId}`);
     } catch (err) {
-      message.error(`保存失败: ${err.message}`);
+      message.error(`Save failed: ${err.message}`);
     }
   };
 
   if (!game) {
-    return <div>加载中…</div>;
+    return <div>Loading...</div>;
   }
   return (
     <div style={{ padding: 24, maxWidth: 800, margin: '0 auto' }}>
       <Button onClick={() => navigate(`/game/${gameId}`)} style={{ marginBottom: 16 }}>
-        ← 返回题目列表
+        ← Back to Question List
       </Button>
-      <h2>编辑题目 #{questionId}</h2>
+      <h2>Edit Question #{questionId}</h2>
       <Form form={form} layout="vertical">
-        <Form.Item name="type" label="题目类型" rules={[{ required: true, message: '请选择题型' }]}>
-          <Select placeholder="选择题型">
-            <Option value="single">单选题</Option>
-            <Option value="multiple">多选题</Option>
-            <Option value="judgement">判断题</Option>
+        {/* 题目类型 */}
+        <Form.Item name="type" label="Question Type" rules={[{ required: true, message: 'Please select question type' }]}>
+          <Select placeholder="Select question type">
+            <Option value="single">Single Choice</Option>
+            <Option value="multiple">Multiple Choice</Option>
+            <Option value="judgement">Judgement</Option>
           </Select>
         </Form.Item>
-        <Form.Item name="text" label="题干" rules={[{ required: true, message: '请输入题干' }]}>
-          <Input.TextArea rows={3} />
+        {/* 题干 */}
+        <Form.Item name="text" label="Question Text" rules={[{ required: true, message: 'Please enter question text' }]}>
+          <Input.TextArea rows={3} placeholder="Enter question text" />
         </Form.Item>
-        <Form.Item name="duration" label="答题时限 (秒)" rules={[{ required: true, message: '请输入时限' }]}>
-          <InputNumber min={1} />
+        {/* 答题时限 */}
+        <Form.Item name="duration" label="Time Limit (sec)" rules={[{ required: true, message: 'Please enter time limit' }]}>
+          <InputNumber min={1} placeholder="Enter time limit (sec)" />
         </Form.Item>
-        <Form.Item name="points" label="分值" rules={[{ required: true, message: '请输入分值' }]}>
-          <InputNumber min={1} />
+        {/* 分值 */}
+        <Form.Item name="points" label="Points" rules={[{ required: true, message: 'Please enter points' }]}>
+          <InputNumber min={1} placeholder="Enter points" />
         </Form.Item>
-        <Form.Item label="媒体" help="可选上传图片或填写 YouTube 链接">
+        {/* 媒体 */}
+        <Form.Item label="Media" help="Optional: upload image or provide YouTube URL">
           <Tabs defaultActiveKey="image">
-            <TabPane tab="图片" key="image">
+            <TabPane tab="Image" key="image">
               <Upload
                 listType="picture-card"
                 fileList={fileList}
                 onChange={({ fileList: newList }) => setFileList(newList)}
                 beforeUpload={file => {
                   const isImg = file.type.startsWith('image/');
-                  if (!isImg) message.error('只支持图片');
+                  if (!isImg) message.error('Only images supported');
                   return false;
                 }}
               >
-                {fileList.length < 1 && <div><PlusOutlined /><div>上传图片</div></div>}
+                {fileList.length < 1 && <div><PlusOutlined /><div>Upload Image</div></div>}
               </Upload>
             </TabPane>
             <TabPane tab="YouTube" key="video">
               <Input
                 value={videoUrl}
                 onChange={e => setVideoUrl(e.target.value)}
-                placeholder="输入 YouTube 链接"
+                placeholder="Enter YouTube URL"
               />
             </TabPane>
           </Tabs>
         </Form.Item>
+        {/* 答案选项 */}
         <Form.List name="answers" initialValue={game.questions.find(q => q.id === +questionId).answers}>
           {(fields, { add, remove }) => (
             <>
@@ -147,9 +153,9 @@ export default function QuestionEdit() {
                     {...field}
                     name={[field.name, 'text']}
                     fieldKey={[field.fieldKey, 'text']}
-                    rules={[{ required: true, message: '请输入答案' }]}
+                    rules={[{ required: true, message: 'Please enter an answer' }]}
                   >
-                    <Input placeholder={`答案 ${idx + 1}`} />
+                    <Input placeholder={`Answer ${idx + 1}`} />
                   </Form.Item>
                   <Form.Item
                     {...field}
@@ -157,7 +163,7 @@ export default function QuestionEdit() {
                     fieldKey={[field.fieldKey, 'isCorrect']}
                     valuePropName="checked"
                   >
-                    <Checkbox>正确答案</Checkbox>
+                    <Checkbox>Correct Answer</Checkbox>
                   </Form.Item>
                   <DeleteOutlined onClick={() => remove(field.name)} style={{ fontSize: 20, color: 'red' }} />
                 </Space>
@@ -169,15 +175,16 @@ export default function QuestionEdit() {
                   disabled={fields.length >= 6}
                   icon={<PlusOutlined />}
                 >
-                  添加答案
+                  Add Answer
                 </Button>
               </Form.Item>
             </>
           )}
         </Form.List>
+        {/* 保存按钮 */}
         <Form.Item>
           <Button type="primary" onClick={handleSave} style={{ marginTop: 16 }}>
-            保存题目
+            Save Question
           </Button>
         </Form.Item>
       </Form>
