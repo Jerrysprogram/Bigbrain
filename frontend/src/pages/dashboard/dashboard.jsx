@@ -143,22 +143,24 @@ export default function Dashboard() {
     }
   };
 
-  // 停止游戏会话
-  const handleStopSession = async (gameId, sessionId) => {
-    try {
-      await requests.post(`/admin/game/${gameId}/mutate`, { mutationType: 'END' });
-      message.success('Session stopped successfully');
-      fetchGames();
-      Modal.confirm({
-        title: 'Session Stopped',
-        content: 'Would you like to view results?',
-        okText: 'Yes',
-        cancelText: 'No',
-        onOk: () => navigate(`/session/${sessionId}`),
-      });
-    } catch (err) {
-      message.error(`Stop session failed: ${err.message}`);
-    }
+  // 停止游戏会话（先确认后调用）
+  const handleStopSession = (gameId, sessionId) => {
+    Modal.confirm({
+      title: 'Stop Session?',
+      content: 'Stopping the session will end the game and redirect to results. Continue?',
+      okText: 'Yes',
+      cancelText: 'No',
+      onOk: async () => {
+        try {
+          await requests.post(`/admin/game/${gameId}/mutate`, { mutationType: 'END' });
+          message.success('Session stopped successfully');
+          fetchGames();
+          navigate(`/session/${sessionId}`);
+        } catch (err) {
+          message.error(`Stop session failed: ${err.message}`);
+        }
+      },
+    });
   };
 
   return (
