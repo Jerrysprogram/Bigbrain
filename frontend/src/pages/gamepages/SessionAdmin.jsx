@@ -40,8 +40,15 @@ export default function SessionAdmin() {
   // 拉取结果
   const fetchResults = async () => {
     try {
-      const res = await requests.get(`/admin/session/${sessionId}/results`);
-      setResults(res);
+      const data = await requests.get(`/admin/session/${sessionId}/results`);
+      // API may return plain array or object with results property
+      if (Array.isArray(data)) {
+        setResults(data);
+      } else if (data && Array.isArray(data.results)) {
+        setResults(data.results);
+      } else {
+        setResults([]);
+      }
     } catch (err) {
       message.error(`Fetch results failed: ${err.message}`);
     }
