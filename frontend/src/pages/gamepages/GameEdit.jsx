@@ -32,11 +32,11 @@ export default function GameEdit() {
     try {
       const { games } = await requests.get('/admin/games');
       const g = games.find(g => g.id === +gameId);
-      if (!g) throw new Error('游戏未找到');
+      if (!g) throw new Error('Game not found');
       setGame(g);
       setQuestions(g.questions || []);
     } catch (err) {
-      message.error(`加载游戏失败: ${err.message}`);
+      message.error(`Failed to load game: ${err.message}`);
     }
   };
 
@@ -67,11 +67,11 @@ export default function GameEdit() {
         } : g
       );
       await requests.put('/admin/games', { games: updatedAll });
-      message.success('游戏信息已更新');
+      message.success('Game information updated successfully');
       setInfoVisible(false);
       fetchGame();
     } catch (err) {
-      message.error(`更新失败: ${err.message}`);
+      message.error(`Update failed: ${err.message}`);
     }
   };
 
@@ -87,10 +87,10 @@ export default function GameEdit() {
       const all = await requests.get('/admin/games').then(r => r.games);
       const updatedAll = all.map(g => (g.id === +gameId ? { ...g, questions: newQs } : g));
       await requests.put('/admin/games', { games: updatedAll });
-      message.success('题目已删除');
+      message.success('Question deleted successfully');
       setQuestions(newQs);
     } catch (err) {
-      message.error(`删除失败: ${err.message}`);
+      message.error(`Delete failed: ${err.message}`);
     }
   };
 
@@ -115,11 +115,11 @@ export default function GameEdit() {
       const all = await requests.get('/admin/games').then(r => r.games);
       const updatedAll = all.map(g => (g.id === +gameId ? { ...g, questions: newQs } : g));
       await requests.put('/admin/games', { games: updatedAll });
-      message.success('题目已添加');
+      message.success('Question added successfully');
       setAddVisible(false);
       setQuestions(newQs);
     } catch (err) {
-      message.error(`添加失败: ${err.message}`);
+      message.error(`Add failed: ${err.message}`);
     }
   };
 
@@ -128,38 +128,38 @@ export default function GameEdit() {
   };
 
   if (!game) {
-    return <div>加载中...</div>;
+    return <div>Loading...</div>;
   }
 
   return (
     <div style={{ padding: 24, maxWidth: 1200, margin: '0 auto' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <Button onClick={() => navigate('/dashboard')}>← Back Dashboard</Button>
+        <Button onClick={() => navigate('/dashboard')}>← Back to Dashboard</Button>
         <h1>{game.name}</h1>
         <div>
           <Button onClick={openInfo} style={{ marginRight: 12 }}>
-            编辑游戏信息
+            Edit Game Info
           </Button>
           <Button type="primary" onClick={openAdd}>
-            + 添加问题
+            + Add Question
           </Button>
         </div>
       </div>
-      <Divider>问题列表</Divider>
+      <Divider>Question List</Divider>
 
       <List
         dataSource={questions}
         renderItem={(q, idx) => (
           <Card key={q.id} style={{ marginBottom: 12 }}>
             <Card.Meta
-              title={`问题 ${idx + 1}: ${q.text || '未填写题干'}`}
-              description={`类型: ${q.type || '未知'}`}
+              title={`Question ${idx + 1}: ${q.text || 'No question text'}`}
+              description={`Type: ${q.type || 'Unknown'}`}
             />
             <div style={{ float: 'right', marginTop: 8 }}>
               <Link to={`/game/${gameId}/question/${q.id}`}> 
                 <EditOutlined style={{ marginRight: 12, cursor: 'pointer' }} />
               </Link>
-              <Popconfirm title="确认删除该题？" onConfirm={() => handleDelete(q.id)}>
+              <Popconfirm title="Are you sure to delete this question?" onConfirm={() => handleDelete(q.id)}>
                 <DeleteOutlined style={{ color: 'red', cursor: 'pointer' }} />
               </Popconfirm>
             </div>
@@ -167,41 +167,41 @@ export default function GameEdit() {
         )}
       />
 
-      <Modal title="编辑游戏信息" visible={infoVisible} onOk={handleInfoOk} onCancel={handleInfoCancel}>
+      <Modal title="Edit Game Info" visible={infoVisible} onOk={handleInfoOk} onCancel={handleInfoCancel}>
         <Form form={formInfo} layout="vertical">
-          <Form.Item label="游戏封面">
+          <Form.Item label="Game Cover">
             <Upload
               listType="picture-card"
               fileList={fileList}
               onChange={({ fileList: newList }) => setFileList(newList)}
               beforeUpload={file => {
                 const isImg = file.type.startsWith('image/');
-                if (!isImg) message.error('请上传图片文件');
+                if (!isImg) message.error('Please upload image files only');
                 return false;
               }}
             >
-              {fileList.length < 1 && <div><PlusOutlined /><div>上传</div></div>}
+              {fileList.length < 1 && <div><PlusOutlined /><div>Upload</div></div>}
             </Upload>
           </Form.Item>
-          <Form.Item name="name" label="游戏名称" rules={[{ required: true, message: '请输入名称' }]}>
-            <Input />
+          <Form.Item name="name" label="Game Name" rules={[{ required: true, message: 'Please enter name' }]}>
+            <Input placeholder="Enter game name" />
           </Form.Item>
-          <Form.Item name="description" label="游戏描述">
-            <Input.TextArea />
+          <Form.Item name="description" label="Game Description">
+            <Input.TextArea placeholder="Enter game description" />
           </Form.Item>
         </Form>
       </Modal>
 
-      <Modal title="添加新问题" visible={addVisible} onOk={handleAddOk} onCancel={handleAddCancel}>
+      <Modal title="Add New Question" visible={addVisible} onOk={handleAddOk} onCancel={handleAddCancel}>
         <Form form={formAdd} layout="vertical">
-          <Form.Item name="text" label="题干" rules={[{ required: true, message: '请输入题干' }]}>
-            <Input.TextArea />
+          <Form.Item name="text" label="Question Text" rules={[{ required: true, message: 'Please enter question text' }]}>
+            <Input.TextArea placeholder="Enter question text" />
           </Form.Item>
-          <Form.Item name="type" label="题型" rules={[{ required: true, message: '请选择题型' }]}>
-            <Select>
-              <Select.Option value="single">单选</Select.Option>
-              <Select.Option value="multiple">多选</Select.Option>
-              <Select.Option value="judgement">判断</Select.Option>
+          <Form.Item name="type" label="Question Type" rules={[{ required: true, message: 'Please select question type' }]}>
+            <Select placeholder="Select question type">
+              <Select.Option value="single">Single Choice</Select.Option>
+              <Select.Option value="multiple">Multiple Choice</Select.Option>
+              <Select.Option value="judgement">Judgement</Select.Option>
             </Select>
           </Form.Item>
         </Form>
