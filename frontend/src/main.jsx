@@ -8,6 +8,7 @@ import Login from './pages/login/login.jsx'
 import Register from './pages/register/register.jsx'
 import Dashboard from './pages/dashboard/dashboard.jsx'
 import Games from './pages/gamepages/games.jsx'
+import GameEdit from './pages/gamepages/GameEdit.jsx'
 
 const router = createBrowserRouter([
   {
@@ -25,6 +26,10 @@ const router = createBrowserRouter([
   {
     path: '/dashboard',
     element: <Dashboard />,
+  },
+  {
+    path: '/game/:gameId',
+    element: <GameEdit />,
   },
   {
     path: '/games/:gameId',
