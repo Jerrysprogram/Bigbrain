@@ -9,10 +9,11 @@ import {
   Form,
   Input,
   Select,
+  Upload,
   Popconfirm,
   message,
 } from 'antd';
-import { EditOutlined, DeleteOutlined } from '@ant-design/icons';
+import { EditOutlined, DeleteOutlined, PlusOutlined } from '@ant-design/icons';
 import requests from '../../utills/requests';
 
 export default function GameEdit() {
@@ -24,6 +25,7 @@ export default function GameEdit() {
   const [addVisible, setAddVisible] = useState(false);
   const [formInfo] = Form.useForm();
   const [formAdd] = Form.useForm();
+  const [fileList, setFileList] = useState([]);
 
   // 拉取当前游戏及题目
   const fetchGame = async () => {
@@ -48,14 +50,21 @@ export default function GameEdit() {
       name: game.name,
       description: game.description,
     });
+    setFileList(game.thumbnail ? [{ uid: '-1', url: game.thumbnail, thumbUrl: game.thumbnail }] : []);
     setInfoVisible(true);
   };
+
   const handleInfoOk = async () => {
     try {
       const vals = await formInfo.validateFields();
       const all = await requests.get('/admin/games').then(r => r.games);
       const updatedAll = all.map(g =>
-        g.id === +gameId ? { ...g, name: vals.name, description: vals.description } : g
+        g.id === +gameId ? {
+          ...g,
+          name: vals.name,
+          description: vals.description,
+          thumbnail: fileList.length ? (fileList[0].thumbUrl || fileList[0].url) : g.thumbnail,
+        } : g
       );
       await requests.put('/admin/games', { games: updatedAll });
       message.success('游戏信息已更新');
@@ -65,8 +74,10 @@ export default function GameEdit() {
       message.error(`更新失败: ${err.message}`);
     }
   };
+
   const handleInfoCancel = () => {
     setInfoVisible(false);
+    setFileList([]);
   };
 
   // 删除题目
@@ -88,10 +99,18 @@ export default function GameEdit() {
     formAdd.resetFields();
     setAddVisible(true);
   };
+
   const handleAddOk = async () => {
     try {
       const vals = await formAdd.validateFields();
-      const newQ = { id: Date.now(), text: vals.text, type: vals.type };
+      const newQ = {
+        id: Date.now(),
+        text: vals.text,
+        type: vals.type,
+        duration: 30,
+        points: 10,
+        correctAnswers: [],
+      };
       const newQs = [...questions, newQ];
       const all = await requests.get('/admin/games').then(r => r.games);
       const updatedAll = all.map(g => (g.id === +gameId ? { ...g, questions: newQs } : g));
@@ -103,6 +122,7 @@ export default function GameEdit() {
       message.error(`添加失败: ${err.message}`);
     }
   };
+
   const handleAddCancel = () => {
     setAddVisible(false);
   };
@@ -149,6 +169,20 @@ export default function GameEdit() {
 
       <Modal title="编辑游戏信息" visible={infoVisible} onOk={handleInfoOk} onCancel={handleInfoCancel}>
         <Form form={formInfo} layout="vertical">
+          <Form.Item label="游戏封面">
+            <Upload
+              listType="picture-card"
+              fileList={fileList}
+              onChange={({ fileList: newList }) => setFileList(newList)}
+              beforeUpload={file => {
+                const isImg = file.type.startsWith('image/');
+                if (!isImg) message.error('请上传图片文件');
+                return false;
+              }}
+            >
+              {fileList.length < 1 && <div><PlusOutlined /><div>上传</div></div>}
+            </Upload>
+          </Form.Item>
           <Form.Item name="name" label="游戏名称" rules={[{ required: true, message: '请输入名称' }]}>
             <Input />
           </Form.Item>
