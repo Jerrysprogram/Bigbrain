@@ -9,6 +9,7 @@ import Register from './pages/register/register.jsx'
 import Dashboard from './pages/dashboard/dashboard.jsx'
 import Games from './pages/gamepages/games.jsx'
 import GameEdit from './pages/gamepages/GameEdit.jsx'
+import QuestionEdit from './pages/gamepages/QuestionEdit.jsx'
 
 const router = createBrowserRouter([
   {
@@ -30,6 +31,10 @@ const router = createBrowserRouter([
   {
     path: '/game/:gameId',
     element: <GameEdit />,
+  },
+  {
+    path: '/game/:gameId/question/:questionId',
+    element: <QuestionEdit />,
   },
   {
     path: '/games/:gameId',
