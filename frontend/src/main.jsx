@@ -11,6 +11,8 @@ import Games from './pages/gamepages/games.jsx'
 import GameEdit from './pages/gamepages/GameEdit.jsx'
 import QuestionEdit from './pages/gamepages/QuestionEdit.jsx'
 import SessionAdmin from './pages/gamepages/SessionAdmin.jsx'
+import Join from './pages/play/Join.jsx'
+import Play from './pages/play/Play.jsx'
 
 const router = createBrowserRouter([
   {
@@ -28,6 +30,18 @@ const router = createBrowserRouter([
   {
     path: '/dashboard',
     element: <Dashboard />,
+  },
+  {
+    path: '/play/join',
+    element: <Join />
+  },
+  {
+    path: '/play/join/:sessionId',
+    element: <Join />
+  },
+  {
+    path: '/play/:playerId',
+    element: <Play />,
   },
   {
     path: '/game/:gameId',
