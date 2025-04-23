@@ -227,9 +227,15 @@ export default function Dashboard() {
                   </Popconfirm>
                   {/* Start Session button */}
                   {item.active == null ? (
-                    <Button type="primary" size="small" style={{ marginTop: 8 }} onClick={() => handleStartSession(item.id)}>
-                      Start Session
-                    </Button>
+                    (item.questions && item.questions.length > 0) ? (
+                      <Button type="primary" size="small" style={{ marginTop: 8 }} onClick={() => handleStartSession(item.id)}>
+                        Start Session
+                      </Button>
+                    ) : (
+                      <Button type="primary" size="small" style={{ marginTop: 8 }} disabled>
+                        Add Questions First
+                      </Button>
+                    )
                   ) : (
                     <div style={{ marginTop: 8 }}>
                       <strong>Session ID:</strong> {item.active}
