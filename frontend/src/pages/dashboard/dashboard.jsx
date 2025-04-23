@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { List, Card, Avatar, Modal, Button, Dropdown, Menu, message, Upload, Form, Input, Popconfirm, Divider } from 'antd';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { UserOutlined, PlusOutlined, EditOutlined, DeleteOutlined, CopyOutlined } from '@ant-design/icons';
 import { ifLogin } from '../../utills/index';
 import requests from '../../utills/requests';
@@ -12,9 +12,6 @@ export default function Dashboard() {
   const [games, setGames] = useState([]);
   const [editingGame, setEditingGame] = useState(null);
   const navigate = useNavigate();
-  const { gameId } = useParams();
-  const [game, setGame] = useState(null);
-  const [questions, setQuestions] = useState([]);
   const [sessionModalVisible, setSessionModalVisible] = useState(false);
   const [newSessionId, setNewSessionId] = useState(null);
 
@@ -48,15 +45,6 @@ export default function Dashboard() {
       fetchGames();
     }
   }, []);
-
-  useEffect(() => {
-    // 从后端拉当前游戏
-    requests.get('/admin/games').then(({ games }) => {
-      const g = games.find(g => g.id === +gameId);
-      setGame(g);
-      setQuestions(g.questions || []);
-    });
-  }, [gameId]);
 
   /**
    * 弹窗确认：创建或更新游戏
