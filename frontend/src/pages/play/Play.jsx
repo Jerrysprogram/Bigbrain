@@ -71,3 +71,69 @@ export default function Play() {
     return <Alert message="Please wait for the host to start the game" type="info" />;
   }
 
+  // final results
+  if (!status.started && results) {
+    return (
+      <div style={{ padding: 24 }}>
+        <Title level={3}>Your Results</Title>
+        <List
+          dataSource={results}
+          renderItem={(ans, idx) => (
+            <List.Item>
+              <Paragraph>
+                Question {idx + 1}: {ans.answers || ''}
+                {' '}| Correct: {ans.correct ? 'Yes' : 'No'}
+                {' '}| Time: {Math.round((new Date(ans.answeredAt) - new Date(ans.questionStartedAt)) / 1000)}s
+              </Paragraph>
+            </List.Item>
+          )}
+        />
+      </div>
+    );
+  }
+
+  // question ongoing
+  if (status.started && question && correctAnswers === null) {
+    // countdown
+    useEffect(() => {
+      const t = setInterval(() => setTimer(t => (t > 0 ? t - 1 : 0)), 1000);
+      return () => clearInterval(t);
+    }, []);
+    const type = question.type;
+    let inputComponent;
+    if (type === 'single' || type === 'judgement') {
+      const options = type === 'judgement' ? ['True', 'False'] : question.answers.map((_, i) => i);
+      inputComponent = (
+        <Radio.Group onChange={e => submitAnswers([e.target.value])} value={answers[0]}>
+          {options.map(opt => (
+            <Radio key={opt} value={opt}>{opt.toString()}</Radio>
+          ))}
+        </Radio.Group>
+      );
+    } else {
+      inputComponent = (
+        <Checkbox.Group options={question.answers.map((_,i)=>({ label: i, value:i }))} value={answers} onChange={submitAnswers} />
+      );
+    }
+    return (
+      <div style={{ padding: 24 }}>
+        <Title level={4}>Question: {question.text}</Title>
+        <Progress percent={(timer / question.duration) * 100} status="active" />
+        {inputComponent}
+      </div>
+    );
+  }
+
+  // answer feedback
+  if (status.started && question && correctAnswers) {
+    return (
+      <div style={{ padding: 24 }}>
+        <Title level={4}>Correct Answers: {correctAnswers.join(', ')}</Title>
+        <Paragraph>You answered: {answers.join(', ')}</Paragraph>
+        <Paragraph>{answers.sort().toString() === correctAnswers.sort().toString() ? 'You are correct!' : 'Wrong answer.'}</Paragraph>
+      </div>
+    );
+  }
+
+  return null;
+} 
