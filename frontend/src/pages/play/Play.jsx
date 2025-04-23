@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
-import { Spin, Alert, Button, Radio, Checkbox, List, Typography, Progress, message } from 'antd';
+import { Spin, Alert, Button, Radio, Checkbox, List, Table, Typography, Progress, message } from 'antd';
 import requests from '../../utills/requests';
 
 const { Title, Paragraph } = Typography;
@@ -73,21 +73,26 @@ export default function Play() {
 
   // final results
   if (!status.started && results) {
+    // merge question results with scoring
+    const merged = results.map((ans, idx) => ({
+      key: idx,
+      question: idx + 1,
+      time: Math.round((new Date(ans.answeredAt) - new Date(ans.questionStartedAt)) / 1000),
+      correct: ans.correct ? 'Yes' : 'No',
+      points: ans.correct ? (status.questions[idx]?.points || 0) : 0,
+    }));
+    const totalScore = merged.reduce((sum, row) => sum + row.points, 0);
+    const columns = [
+      { title: 'Question', dataIndex: 'question', key: 'question' },
+      { title: 'Time(s)', dataIndex: 'time', key: 'time' },
+      { title: 'Correct', dataIndex: 'correct', key: 'correct' },
+      { title: 'Points', dataIndex: 'points', key: 'points' },
+    ];
     return (
       <div style={{ padding: 24 }}>
         <Title level={3}>Your Results</Title>
-        <List
-          dataSource={results}
-          renderItem={(ans, idx) => (
-            <List.Item>
-              <Paragraph>
-                Question {idx + 1}: {ans.answers || ''}
-                {' '}| Correct: {ans.correct ? 'Yes' : 'No'}
-                {' '}| Time: {Math.round((new Date(ans.answeredAt) - new Date(ans.questionStartedAt)) / 1000)}s
-              </Paragraph>
-            </List.Item>
-          )}
-        />
+        <Paragraph>Total Score: {totalScore}</Paragraph>
+        <Table dataSource={merged} columns={columns} pagination={false} />
       </div>
     );
   }
