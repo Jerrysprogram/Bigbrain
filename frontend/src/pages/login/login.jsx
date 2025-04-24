@@ -1,8 +1,8 @@
-import React from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { LockOutlined, UserOutlined } from '@ant-design/icons';
-import { Button, Checkbox, Form, Input, message, Typography } from 'antd';
-import requests from '../../utills/requests';
+// import React from 'react';
+import { Link, useNavigate } from "react-router-dom";
+import { LockOutlined, UserOutlined } from "@ant-design/icons";
+import { Button, Checkbox, Form, Input, message, Typography } from "antd";
+import requests from "../../utills/requests";
 
 const { Title } = Typography;
 
@@ -10,29 +10,38 @@ const { Title } = Typography;
 export default function Login() {
   // Initialize navigation
   const navigate = useNavigate();
-  const onFinish = values => {
-    console.log('Received values of form: ', values);
+  const onFinish = (values) => {
+    console.log("Received values of form: ", values);
     const { email, password } = values;
     // Send login request
-    requests.post('/admin/auth/login', { email, password })
-      .then(res => {
-        if (res && res.token) {
-          // Save token and show success message
-          localStorage.setItem('token', res.token);
-          localStorage.setItem('email', values.email);
-          message.success('Login successful!');
-          // Redirect to dashboard
-          navigate('/dashboard');
-        } else {
-          // Show error message on login failure
-          message.error('Invalid email or password');
-        }
-      });
+    requests.post("/admin/auth/login", { email, password }).then((res) => {
+      if (res && res.token) {
+        // Save token and show success message
+        localStorage.setItem("token", res.token);
+        localStorage.setItem("email", values.email);
+        message.success("Login successful!");
+        // Redirect to dashboard
+        navigate("/dashboard");
+      } else {
+        // Show error message on login failure
+        message.error("Invalid email or password");
+      }
+    });
   };
   return (
-    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', padding: '0 16px' }}>
+    <div
+      style={{
+        display: "flex",
+        justifyContent: "center",
+        alignItems: "center",
+        height: "100vh",
+        padding: "0 16px",
+      }}
+    >
       <div style={{ width: 360 }}>
-        <Title level={2} style={{ textAlign: 'center', marginBottom: 24 }}>Login</Title>
+        <Title level={2} style={{ textAlign: "center", marginBottom: 24 }}>
+          Login
+        </Title>
         <Form
           name="login"
           initialValues={{ remember: true }}
@@ -40,18 +49,28 @@ export default function Login() {
         >
           <Form.Item
             name="email"
-            rules={[{ required: true, message: 'Please input your Email!' }]}
+            rules={[{ required: true, message: "Please input your Email!" }]}
           >
             <Input prefix={<UserOutlined />} placeholder="Email" />
           </Form.Item>
           <Form.Item
             name="password"
-            rules={[{ required: true, message: 'Please input your Password!' }]}
+            rules={[{ required: true, message: "Please input your Password!" }]}
           >
-            <Input prefix={<LockOutlined />} type="password" placeholder="Password" />
+            <Input
+              prefix={<LockOutlined />}
+              type="password"
+              placeholder="Password"
+            />
           </Form.Item>
           <Form.Item>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+              }}
+            >
               <Form.Item name="remember" valuePropName="checked" noStyle>
                 <Checkbox>Remember me</Checkbox>
               </Form.Item>
