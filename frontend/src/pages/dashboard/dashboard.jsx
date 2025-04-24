@@ -290,13 +290,10 @@ export default function Dashboard() {
           <Button key="copy" icon={<CopyOutlined />} onClick={() => {
             const url = `${window.location.origin}/play/join/${newSessionId}`;
             navigator.clipboard.writeText(url);
-            message.success('Link copied!');
-          }}>Copy Link</Button>,
-          <Button key="confirm" type="primary" onClick={() => {
-            localStorage.setItem(`bb_link_shared_${newSessionId}`, 'true');
-            message.success('Link share confirmed');
-            setSessionModalVisible(false);
-          }}>我已分享链接</Button>
+            message.success('链接已复制');
+          }}>
+            复制链接
+          </Button>
         ]}
       >
         <div>
