@@ -108,6 +108,12 @@ export default function Play() {
   // 提交答案
   const submitAnswers = async (values) => {
     try {
+      // 检查游戏状态
+      if (gameState.position === -1) {
+        message.error('游戏尚未开始，请等待');
+        return;
+      }
+
       if (gameState.timeLeft <= 0) {
         message.error('时间已到，无法提交答案');
         return;
@@ -121,11 +127,19 @@ export default function Play() {
       setSubmitting(true);
       // 确保答案是一个数组
       const answers = Array.isArray(values) ? values : [values];
-      console.log('准备提交的答案:', answers);
-      console.log('当前玩家ID:', playerId);
+      console.log('提交答案信息:', {
+        answers,
+        playerId,
+        gameState: {
+          position: gameState.position,
+          started: gameState.started,
+          timeLeft: gameState.timeLeft,
+          question: gameState.question
+        }
+      });
       
       // 发送答案数组，包装在对象中
-      const response = await requests.put(`/play/${playerId}/answer`, { answers });
+      const response = await requests.put(`/play/${playerId}/answer`, { answersFromRequest: answers });
       console.log('提交答案响应:', response);
       
       setGameState(prev => ({
@@ -140,13 +154,18 @@ export default function Play() {
         stack: err.stack,
         values: values,
         playerId: playerId,
-        gameState: gameState
+        gameState: {
+          position: gameState.position,
+          started: gameState.started,
+          timeLeft: gameState.timeLeft,
+          question: gameState.question
+        }
       });
       
       if (err.message.includes('Player ID does not refer to valid player id')) {
         message.error('玩家ID无效，请重新加入游戏');
       } else if (err.message.includes('Session has not started yet')) {
-        message.error('游戏尚未开始');
+        message.error('游戏尚未开始，请等待');
       } else if (err.message.includes('Can\'t answer question once answer is available')) {
         message.error('答案已公布，无法提交');
       } else {
