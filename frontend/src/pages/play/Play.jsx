@@ -8,41 +8,69 @@ const { Title, Paragraph } = Typography;
 export default function Play() {
   const { playerId } = useParams();
   const [loading, setLoading] = useState(true);
-  const [started, setStarted] = useState(false);
-  const [question, setQuestion] = useState(null);
-  const [answers, setAnswers] = useState([]);
-  const [correctAnswers, setCorrectAnswers] = useState(null);
-  const [results, setResults] = useState(null);
-  const [timer, setTimer] = useState(0);
+  const [gameState, setGameState] = useState({
+    started: false,
+    position: -1,
+    question: null,
+    answers: [],
+    correctAnswers: null,
+    results: null,
+    timeLeft: 0
+  });
 
-  // 1. 轮询会话是否开始
+  // 1. 轮询游戏状态
   useEffect(() => {
-    let interval = null;
-    const pollStart = async () => {
+    const pollStatus = async () => {
       try {
         const res = await requests.get(`/play/${playerId}/status`);
-        const { started: startedResp } = res;
-        if (startedResp && !started) {
-          setStarted(true);
-          const { question: q } = await requests.get(`/play/${playerId}/question`);
-          if (q) {
-            setQuestion(q);
-            setAnswers([]);
-            setCorrectAnswers(null);
-            // 根据接口时间初始化倒计时
-            const elapsed = (Date.now() - new Date(q.isoTimeLastQuestionStarted).getTime()) / 1000;
-            setTimer(Math.max(q.duration - elapsed, 0));
-            setLoading(false);
+        setGameState(prev => ({
+          ...prev,
+          started: res.started
+        }));
+
+        // 如果游戏已经开始，获取当前问题
+        if (res.started) {
+          try {
+            const { question } = await requests.get(`/play/${playerId}/question`);
+            if (question) {
+              // 计算剩余时间
+              const elapsed = (Date.now() - new Date(question.isoTimeLastQuestionStarted).getTime()) / 1000;
+              const timeLeft = Math.max(question.duration - elapsed, 0);
+              
+              setGameState(prev => ({
+                ...prev,
+                question,
+                timeLeft,
+                answers: [], // 新题目清空答案
+                correctAnswers: null // 清空正确答案
+              }));
+              setLoading(false);
+            }
+          } catch (e) {
+            console.error('Error fetching question:', e);
+          }
+        } else if (!res.started && gameState.started) {
+          // 游戏结束，获取结果
+          try {
+            const results = await requests.get(`/play/${playerId}/results`);
+            setGameState(prev => ({
+              ...prev,
+              results
+            }));
+          } catch (e) {
+            console.error('Error fetching results:', e);
           }
         }
       } catch (e) {
-        console.error('Poll start error:', e);
+        console.error('Error polling status:', e);
       }
     };
-    interval = setInterval(pollStart, 1000);
-    pollStart();
-    return () => clearInterval(interval);
-  }, [playerId, started]);
+
+    const statusInterval = setInterval(pollStatus, 1000);
+    pollStatus(); // 立即执行一次
+    return () => clearInterval(statusInterval);
+  }, [playerId]);
+
 
   // 2. 轮询新题目
   useEffect(() => {
