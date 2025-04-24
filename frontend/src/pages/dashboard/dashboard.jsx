@@ -292,7 +292,11 @@ export default function Dashboard() {
             navigator.clipboard.writeText(url);
             message.success('Link copied!');
           }}>Copy Link</Button>,
-          <Button key="close" type="primary" onClick={() => setSessionModalVisible(false)}>Close</Button>
+          <Button key="confirm" type="primary" onClick={() => {
+            localStorage.setItem(`bb_link_shared_${newSessionId}`, 'true');
+            message.success('Link share confirmed');
+            setSessionModalVisible(false);
+          }}>我已分享链接</Button>
         ]}
       >
         <div>
