@@ -71,6 +71,69 @@ export default function Play() {
     return () => clearInterval(statusInterval);
   }, [playerId]);
 
+  // 倒计时
+  useEffect(() => {
+    if (!gameState.started || !gameState.question || gameState.timeLeft <= 0) return;
+
+    const timer = setInterval(() => {
+      setGameState(prev => ({
+        ...prev,
+        timeLeft: Math.max(prev.timeLeft - 1, 0)
+      }));
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [gameState.started, gameState.question, gameState.timeLeft]);
+
+  // 时间到获取答案
+  useEffect(() => {
+    if (!gameState.started || !gameState.question || gameState.timeLeft > 0 || gameState.correctAnswers) return;
+
+    const getAnswers = async () => {
+      try {
+        const response = await fetch(`${BASE_URL}/play/${playerId}/answer`);
+        const data = await response.json();
+        if (data.error) throw new Error(data.error);
+
+        setGameState(prev => ({
+          ...prev,
+          correctAnswers: data.answers
+        }));
+      } catch (error) {
+        message.error(error.message);
+      }
+    };
+
+    getAnswers();
+  }, [gameState.timeLeft, gameState.started, gameState.question, gameState.correctAnswers]);
+
+  // 提交答案
+  const handleSubmit = async (values) => {
+    if (!values) return;
+    
+    try {
+      const answers = Array.isArray(values) ? values : [values];
+      
+      const response = await fetch(`${BASE_URL}/play/${playerId}/answer`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ answers })
+      });
+
+      const data = await response.json();
+      if (data.error) throw new Error(data.error);
+
+      setGameState(prev => ({
+        ...prev,
+        answers
+      }));
+    } catch (error) {
+      message.error(error.message);
+    }
+  };
+
   // ... 其他代码将在后续部分添加 ...
   return <Spin tip="Loading..." />;
 }
