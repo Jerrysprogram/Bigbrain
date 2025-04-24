@@ -247,3 +247,87 @@ export default function Play() {
 
     return null;
   };
+
+  // 渲染答案选项
+  const renderAnswerOptions = () => {
+    const { question, correctAnswers } = gameState;
+    if (!question || !question.answers) return null;
+
+    const Component = question.type === 'multiple' ? Checkbox : Radio;
+
+    return (
+      <div style={styles.optionsContainer}>
+        {question.type === 'multiple' ? (
+          <Checkbox.Group
+            value={selectedAnswers}
+            onChange={setSelectedAnswers}
+            disabled={!!correctAnswers || submitting}
+          >
+            <Space direction="vertical" style={{ width: '100%' }}>
+              {question.answers.map((answer, index) => (
+                <Checkbox
+                  key={index}
+                  value={answer}
+                  style={styles.option}
+                >
+                  {answer}
+                </Checkbox>
+              ))}
+            </Space>
+          </Checkbox.Group>
+        ) : (
+          <Radio.Group
+            value={selectedAnswers[0]}
+            onChange={(e) => setSelectedAnswers([e.target.value])}
+            disabled={!!correctAnswers || submitting}
+          >
+            <Space direction="vertical" style={{ width: '100%' }}>
+              {question.answers.map((answer, index) => (
+                <Radio
+                  key={index}
+                  value={answer}
+                  style={styles.option}
+                >
+                  {answer}
+                </Radio>
+              ))}
+            </Space>
+          </Radio.Group>
+        )}
+      </div>
+    );
+  };
+
+  // 渲染游戏界面
+  if (gameState.loading) {
+    return (
+      <div style={styles.container}>
+        <Spin size="large" tip="加载中..." />
+      </div>
+    );
+  }
+
+  if (gameState.error) {
+    return (
+      <div style={styles.container}>
+        <Card style={styles.card}>
+          <Title level={4} type="danger">错误</Title>
+          <Paragraph>{gameState.error}</Paragraph>
+        </Card>
+      </div>
+    );
+  }
+
+  if (!gameState.started) {
+    return (
+      <div style={styles.container}>
+        <Card style={styles.card}>
+          <Title level={3}>等待游戏开始</Title>
+          <Paragraph>
+            请等待管理员开始游戏，页面将自动更新...
+          </Paragraph>
+          <Spin />
+        </Card>
+      </div>
+    );
+  }
