@@ -68,7 +68,13 @@ export default function Play() {
 
   // not started
   if (!status.started && question === null) {
-    return <Alert message="Please wait for the host to start the game" type="info" />;
+    return (
+      <div className="lobby-screen">
+        <Title level={2}>Welcome to BigBrain Lobby</Title>
+        <Paragraph>Please wait until the host starts the game...</Paragraph>
+        {/* 你可以加个动画、Logo、倒计时等 */}
+      </div>
+    );
   }
 
   // final results
