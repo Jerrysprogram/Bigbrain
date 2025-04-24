@@ -331,3 +331,56 @@ export default function Play() {
       </div>
     );
   }
+
+  return (
+    <div style={styles.container}>
+      <Card style={styles.card}>
+        {gameState.question && (
+          <>
+            <div style={{ marginBottom: 16 }}>
+              <Progress
+                percent={Math.round((gameState.timeLeft / gameState.question.duration) * 100)}
+                format={() => `${gameState.timeLeft}秒`}
+                status={gameState.timeLeft > 5 ? 'active' : 'exception'}
+              />
+            </div>
+            
+            <Title level={4}>{gameState.question.text}</Title>
+            
+            {renderMedia()}
+            {renderAnswerOptions()}
+
+            {!gameState.correctAnswers && !submitting && gameState.timeLeft > 0 && (
+              <div style={{ marginTop: 24, textAlign: 'center' }}>
+                <button
+                  onClick={submitAnswer}
+                  disabled={selectedAnswers.length === 0}
+                  style={{
+                    padding: '8px 24px',
+                    fontSize: 16,
+                    borderRadius: 4,
+                    backgroundColor: '#1890ff',
+                    color: 'white',
+                    border: 'none',
+                    cursor: 'pointer'
+                  }}
+                >
+                  提交答案
+                </button>
+              </div>
+            )}
+
+            {gameState.correctAnswers && (
+              <Card style={{ marginTop: 24, backgroundColor: '#f6ffed' }}>
+                <Title level={5}>正确答案:</Title>
+                <Paragraph>
+                  {gameState.correctAnswers.join(', ')}
+                </Paragraph>
+              </Card>
+            )}
+          </>
+        )}
+      </Card>
+    </div>
+  );
+}
