@@ -74,7 +74,7 @@ function post(url, data) {
  * @param {*} data Data to be sent, an object
  * @returns
  */
-function put (url, data) {
+function put(url, data) {
   return (
     fetch(`${BASE_HOST}${url}`, {
       ...defaultOptions,
