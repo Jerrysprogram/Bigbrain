@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { List, Card, Avatar, Modal, Button, Dropdown, Menu, message, Upload, Form, Input, Popconfirm, Divider } from 'antd';
+import { List, Card, Avatar, Modal, Button, Dropdown, message, Upload, Form, Input, Popconfirm, Divider } from 'antd';
 import { Link, useNavigate } from 'react-router-dom';
 import { UserOutlined, PlusOutlined, EditOutlined, DeleteOutlined, CopyOutlined } from '@ant-design/icons';
 import { ifLogin } from '../../utills/index';
@@ -111,17 +111,20 @@ export default function Dashboard() {
     navigate('/login');
   };
 
-  // 顶部右侧下拉菜单
-  const menu = (
-    <Menu>
-      <Menu.Item onClick={handleLogout}>Logout</Menu.Item>
-    </Menu>
-  );
+  // 顶部右侧下拉菜单 items 配置（Antd v5 用法）
+  const userMenu = {
+    items: [
+      { key: 'logout', label: 'Logout', onClick: handleLogout },
+    ],
+  };
 
   // 开始游戏会话
   const handleStartSession = async (gameId) => {
     try {
+      // 启动会话并自动推进至第一题
       const { data } = await requests.post(`/admin/game/${gameId}/mutate`, { mutationType: 'START' });
+      // 自动推进到第一题
+      await requests.post(`/admin/game/${gameId}/mutate`, { mutationType: 'ADVANCE' });
       const sessionId = data.sessionId;
       setNewSessionId(sessionId);
       setSessionModalVisible(true);
@@ -160,7 +163,7 @@ export default function Dashboard() {
 
       {/* 右上角头像 + 下拉菜单 */}
       <div style={{ position: 'absolute', top: 24, right: 24 }}>
-        <Dropdown menu={menu} trigger={['click']}>
+        <Dropdown menu={userMenu} trigger={['click']}>
           <Avatar icon={<UserOutlined />} style={{ cursor: 'pointer' }} />
         </Dropdown>
       </div>
@@ -294,8 +297,10 @@ export default function Dashboard() {
           <Button key="close" type="primary" onClick={() => setSessionModalVisible(false)}>Close</Button>
         ]}
       >
-        <p><strong>Session ID:</strong> {newSessionId}</p>
-        <Input value={`${window.location.origin}/play/join/${newSessionId}`} readOnly />
+        <div>
+          <p><strong>Session ID:</strong> {newSessionId}</p>
+          <Input value={`${window.location.origin}/play/join/${newSessionId}`} readOnly />
+        </div>
       </Modal>
     </div>
   );
