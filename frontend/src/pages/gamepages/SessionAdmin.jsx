@@ -165,7 +165,7 @@ export default function SessionAdmin() {
             marginBottom: 16,
           }}
         >
-          <h2>游戏会话: {sessionId}</h2>
+          <h2>Game Session: {sessionId}</h2>
           <div>
             <Button
               onClick={() => {
@@ -175,22 +175,22 @@ export default function SessionAdmin() {
               }}
               style={{ marginRight: 8 }}
             >
-              刷新
+              Refresh
             </Button>
             <Button onClick={() => navigate("/dashboard")} type="primary">
-              返回仪表盘
+              Back to Dashboard
             </Button>
           </div>
         </div>
         <Card size="small" style={{ marginBottom: 16 }}>
           <p>
-            <strong>游戏进行中</strong>
+            <strong>Game in progress</strong>
           </p>
           <p>
-            当前问题: {status.questions[pos]?.text || ""} ({pos + 1}/{total})
+            Current question: {status.questions[pos]?.text || ""} ({pos + 1}/{total})
           </p>
-          <p>答题倒计时: {Math.round(remaining)} 秒</p>
-          <p>在线玩家数: {status.players.length}</p>
+          <p>Answer countdown: {Math.round(remaining)} seconds</p>
+          <p>Online players: {status.players.length}</p>
         </Card>
         <Space>
           <Button
@@ -198,10 +198,10 @@ export default function SessionAdmin() {
             onClick={handleAdvance}
             disabled={status.players.length === 0}
           >
-            下一题
+            Next question
           </Button>
           <Button danger onClick={handleStop}>
-            结束会话
+            End session
           </Button>
         </Space>
       </div>
@@ -276,7 +276,7 @@ export default function SessionAdmin() {
       {/* Charts below table */}
       <Row gutter={[16, 16]} style={{ marginTop: 24 }}>
         <Col xs={24} lg={12}>
-          <Card title="Correct Rate (%)">
+          <Card title="Question Accuracy">
             <div style={{ width: "100%", height: 250 }}>
               <ResponsiveContainer>
                 <BarChart
@@ -284,8 +284,8 @@ export default function SessionAdmin() {
                   margin={{ top: 10, right: 10, left: 0, bottom: 10 }}
                 >
                   <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="question" />
-                  <YAxis unit="%" />
+                  <XAxis dataKey="question" label={{ value: 'Question Number', position: 'insideBottom', offset: -5 }} />
+                  <YAxis label={{ value: 'Accuracy (%)', angle: -90, position: 'insideLeft' }} />
                   <Tooltip />
                   <Bar
                     dataKey="correctRate"
@@ -298,7 +298,7 @@ export default function SessionAdmin() {
           </Card>
         </Col>
         <Col xs={24} lg={12}>
-          <Card title="Average Response Time (s)">
+          <Card title="Average Response Time">
             <div style={{ width: "100%", height: 250 }}>
               <ResponsiveContainer>
                 <LineChart
@@ -306,8 +306,8 @@ export default function SessionAdmin() {
                   margin={{ top: 10, right: 10, left: 0, bottom: 10 }}
                 >
                   <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="question" />
-                  <YAxis unit="s" />
+                  <XAxis dataKey="question" label={{ value: 'Question Number', position: 'insideBottom', offset: -5 }} />
+                  <YAxis label={{ value: 'Average Response Time (s)', angle: -90, position: 'insideLeft' }} />
                   <Tooltip />
                   <Line
                     type="monotone"

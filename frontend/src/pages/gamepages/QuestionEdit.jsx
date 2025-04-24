@@ -62,7 +62,7 @@ export default function QuestionEdit() {
   const handleSave = async () => {
     try {
       const vals = await form.validateFields();
-      // 构建更新后的题目对象
+      // Build updated question object
       const updated = {
         id: +questionId,
         type: vals.type,
@@ -76,11 +76,11 @@ export default function QuestionEdit() {
           isCorrect: a.isCorrect,
         })),
       };
-      // 更新题目列表
+      // Update question list
       const newQuestions = game.questions.map((q) =>
         q.id === updated.id ? updated : q,
       );
-      // 更新游戏在所有游戏数组中的条目
+      // Update game entry in all games array
       const all = await requests.get("/admin/games").then((r) => r.games);
       const updatedAll = all.map((g) =>
         g.id === +gameId ? { ...g, questions: newQuestions } : g,

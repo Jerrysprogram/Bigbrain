@@ -6,14 +6,14 @@ export default function Games() {
   const { gameId } = useParams();
   const [game, setGame] = useState(null);
 
-  // 打印gameId，帮助调试
+  // Print gameId for debugging
   console.log("Current gameId:", gameId);
 
-  // 使用封装的 GET 方法获取游戏详情
+  // Use encapsulated GET method to fetch game details
   useEffect(() => {
     if (gameId) {
-      // 确保 gameId 存在
-      // 使用requests工具中的GET方法请求后端接口
+      // Ensure gameId exists
+      // Use GET method from requests utility to call backend API
       requests.get(`/games/${gameId}`).then((data) => setGame(data));
     }
   }, [gameId]);
