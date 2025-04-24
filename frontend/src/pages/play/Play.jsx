@@ -15,60 +15,78 @@ export default function Play() {
   const [results, setResults] = useState(null);
   const [timer, setTimer] = useState(0);
 
-  // 1) 修复初次开始判断，改名解构、正确判断前后状态
+  // 1. 轮询会话是否开始
   useEffect(() => {
     let interval = null;
     const pollStart = async () => {
-      const res = await requests.get(`/play/${playerId}/status`);
-      const { started: startedResp } = res;
-      if (startedResp && !started) {   // 正确检测"接口已 start 且本地还没 start"
-        setStarted(true);
-        setLoading(false);
-        const { question: q } = await requests.get(`/play/${playerId}/question`);
-        setQuestion(q);
-        setAnswers([]);
-        setCorrectAnswers(null);
-        // 根据接口时间初始化倒计时：要计算 elapsed，再 setTimer(duration-elapsed)
-        const elapsed = (Date.now() - new Date(q.isoTimeLastQuestionStarted).getTime())/1000;
-        setTimer(Math.max(q.duration - elapsed,0));
-        clearInterval(interval);
+      try {
+        const res = await requests.get(`/play/${playerId}/status`);
+        const { started: startedResp } = res;
+        if (startedResp && !started) {
+          setStarted(true);
+          const { question: q } = await requests.get(`/play/${playerId}/question`);
+          if (q) {
+            setQuestion(q);
+            setAnswers([]);
+            setCorrectAnswers(null);
+            // 根据接口时间初始化倒计时
+            const elapsed = (Date.now() - new Date(q.isoTimeLastQuestionStarted).getTime()) / 1000;
+            setTimer(Math.max(q.duration - elapsed, 0));
+            setLoading(false);
+          }
+        }
+      } catch (e) {
+        console.error('Poll start error:', e);
       }
-    }
+    };
     interval = setInterval(pollStart, 1000);
     pollStart();
     return () => clearInterval(interval);
   }, [playerId, started]);
 
-  // 2) 新增"管理端 advance 后切题"轮询
+  // 2. 轮询新题目
   useEffect(() => {
     if (!started || !question) return;
     const qInterval = setInterval(async () => {
-      const { question: q } = await requests.get(`/play/${playerId}/question`);
-      if (q.isoTimeLastQuestionStarted !== question.isoTimeLastQuestionStarted) {
-        // 切题
-        setQuestion(q);
-        setAnswers([]);
-        setCorrectAnswers(null);
-        const elapsed = (Date.now() - new Date(q.isoTimeLastQuestionStarted).getTime())/1000;
-        setTimer(Math.max(q.duration - elapsed,0));
+      try {
+        const { question: q } = await requests.get(`/play/${playerId}/question`);
+        if (q && q.isoTimeLastQuestionStarted !== question.isoTimeLastQuestionStarted) {
+          setQuestion(q);
+          setAnswers([]);
+          setCorrectAnswers(null);
+          const elapsed = (Date.now() - new Date(q.isoTimeLastQuestionStarted).getTime()) / 1000;
+          setTimer(Math.max(q.duration - elapsed, 0));
+        }
+      } catch (e) {
+        console.error('Poll question error:', e);
       }
     }, 1000);
     return () => clearInterval(qInterval);
   }, [playerId, started, question]);
 
-  // 2. 基于前端倒计时，到0时自动取答案
+  // 3. 倒计时和自动获取答案
   useEffect(() => {
     if (!started || !question || correctAnswers) return;
+    
     if (timer <= 0) {
-      requests.get(`/play/${playerId}/answer`).then(res => setCorrectAnswers(res.answers));
+      requests.get(`/play/${playerId}/answer`)
+        .then(res => {
+          if (res && res.answers) {
+            setCorrectAnswers(res.answers);
+          }
+        })
+        .catch(e => console.error('Get answer error:', e));
     } else {
-      const id = setTimeout(() => setTimer(timer - 1), 1000);
+      const id = setTimeout(() => setTimer(t => Math.max(t - 1, 0)), 1000);
       return () => clearTimeout(id);
     }
-  }, [timer, question, correctAnswers, started]);
+  }, [timer, question, correctAnswers, started, playerId]);
 
   const submitAnswers = async (vals) => {
     try {
+      if (!Array.isArray(vals)) {
+        vals = [vals]; // 确保 vals 是数组
+      }
       await requests.put(`/play/${playerId}/answer`, { answers: vals });
       setAnswers(vals);
     } catch (err) {
@@ -117,12 +135,12 @@ export default function Play() {
 
   // question ongoing
   if (question && !correctAnswers) {
-    const type = question.type;
+    const type = question.type || 'single'; // 默认为单选
     let inputComponent;
     if (type === 'single' || type === 'judgement') {
       const options = type === 'judgement'
         ? ['True', 'False']
-        : question.answers.map(ans => ans.text);
+        : (question.answers || []).map(ans => ans.text || ans);
       inputComponent = (
         <Radio.Group onChange={e => submitAnswers([e.target.value])} value={answers[0]}>
           {options.map((opt, idx) => (
@@ -131,18 +149,28 @@ export default function Play() {
         </Radio.Group>
       );
     } else {
+      const options = (question.answers || []).map((ans, idx) => ({
+        label: ans.text || ans,
+        value: ans.text || ans
+      }));
       inputComponent = (
         <Checkbox.Group
-          options={question.answers.map((ans, idx) => ({ label: ans.text, value: ans.text }))}
+          options={options}
           value={answers}
-          onChange={submitAnswers}
+          onChange={vals => submitAnswers(vals)}
         />
       );
     }
     return (
       <div style={{ padding: 24 }}>
         <Title level={4}>Question: {question.text}</Title>
-        <Progress percent={(timer / question.duration) * 100} status="active" />
+        <div style={{ marginBottom: 16 }}>
+          <Progress 
+            percent={Math.round((timer / question.duration) * 100)} 
+            status="active"
+            format={percent => `${Math.ceil(timer)}s`}
+          />
+        </div>
         {inputComponent}
       </div>
     );
