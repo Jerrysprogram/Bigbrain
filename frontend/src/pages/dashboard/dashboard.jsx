@@ -160,13 +160,13 @@ export default function Dashboard() {
 
       {/* 右上角头像 + 下拉菜单 */}
       <div style={{ position: 'absolute', top: 24, right: 24 }}>
-        <Dropdown overlay={menu} trigger={['click']}>
+        <Dropdown menu={menu} trigger={['click']}>
           <Avatar icon={<UserOutlined />} style={{ cursor: 'pointer' }} />
         </Dropdown>
       </div>
 
       {/* 动态渲染游戏列表或无游戏提示 */}
-      {games.length === 0 ? (
+      {(!Array.isArray(games) || games.length === 0) ? (
         <div style={{ textAlign: 'center', marginTop: 20 }}>
           <p>No games available. Click "Create Game" to create a new game.</p>
         </div>
@@ -181,7 +181,7 @@ export default function Dashboard() {
             xl: 1,
             xxl: 1,
           }}
-          dataSource={games}
+          dataSource={Array.isArray(games) ? games : []}
           renderItem={(item) => (
             <List.Item>
               <Card
@@ -215,7 +215,7 @@ export default function Dashboard() {
                   </Popconfirm>
                   {/* Start Session button */}
                   {item.active == null ? (
-                    (item.questions && item.questions.length > 0) ? (
+                    (Array.isArray(item.questions) && item.questions.length > 0) ? (
                       <Button type="primary" size="small" style={{ marginTop: 8 }} onClick={() => handleStartSession(item.id)}>
                         Start Session
                       </Button>
@@ -247,7 +247,7 @@ export default function Dashboard() {
         title="Create New Game"
         okText="Create"
         cancelText="Cancel"
-        visible={modalVisible}
+        open={modalVisible}
         onOk={handleModalOk}
         onCancel={handleCancel}
         destroyOnClose
@@ -283,7 +283,7 @@ export default function Dashboard() {
       {/* Session Modal */}
       <Modal
         title="Session Started"
-        visible={sessionModalVisible}
+        open={sessionModalVisible}
         onCancel={() => setSessionModalVisible(false)}
         footer={[
           <Button key="copy" icon={<CopyOutlined />} onClick={() => {
