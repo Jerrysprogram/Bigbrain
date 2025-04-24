@@ -15,29 +15,46 @@ export default function Play() {
   const [results, setResults] = useState(null);
   const [timer, setTimer] = useState(0);
 
-  // 1. 轮询会话是否开始
+  // 1) 修复初次开始判断，改名解构、正确判断前后状态
   useEffect(() => {
-    const interval = setInterval(async () => {
-      try {
-        const { started } = await requests.get(`/play/${playerId}/status`);
-        if (started && !started) {
-          setStarted(true);
-          // 游戏开始后拉题
-          const { question: q } = await requests.get(`/play/${playerId}/question`);
-          setQuestion(q);
-          setAnswers([]);
-          setCorrectAnswers(null);
-          // 初始化倒计时（直接用 duration）
-          setTimer(q.duration);
-          setLoading(false);
-          clearInterval(interval);
-        }
-      } catch (e) {
-        // ignore
+    let interval = null;
+    const pollStart = async () => {
+      const res = await requests.get(`/play/${playerId}/status`);
+      const { started: startedResp } = res;
+      if (startedResp && !started) {   // 正确检测"接口已 start 且本地还没 start"
+        setStarted(true);
+        setLoading(false);
+        const { question: q } = await requests.get(`/play/${playerId}/question`);
+        setQuestion(q);
+        setAnswers([]);
+        setCorrectAnswers(null);
+        // 根据接口时间初始化倒计时：要计算 elapsed，再 setTimer(duration-elapsed)
+        const elapsed = (Date.now() - new Date(q.isoTimeLastQuestionStarted).getTime())/1000;
+        setTimer(Math.max(q.duration - elapsed,0));
+        clearInterval(interval);
+      }
+    }
+    interval = setInterval(pollStart, 1000);
+    pollStart();
+    return () => clearInterval(interval);
+  }, [playerId, started]);
+
+  // 2) 新增"管理端 advance 后切题"轮询
+  useEffect(() => {
+    if (!started || !question) return;
+    const qInterval = setInterval(async () => {
+      const { question: q } = await requests.get(`/play/${playerId}/question`);
+      if (q.isoTimeLastQuestionStarted !== question.isoTimeLastQuestionStarted) {
+        // 切题
+        setQuestion(q);
+        setAnswers([]);
+        setCorrectAnswers(null);
+        const elapsed = (Date.now() - new Date(q.isoTimeLastQuestionStarted).getTime())/1000;
+        setTimer(Math.max(q.duration - elapsed,0));
       }
     }, 1000);
-    return () => clearInterval(interval);
-  }, [playerId]);
+    return () => clearInterval(qInterval);
+  }, [playerId, started, question]);
 
   // 2. 基于前端倒计时，到0时自动取答案
   useEffect(() => {
