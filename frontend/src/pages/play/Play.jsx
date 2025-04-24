@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
-import { Spin, Radio, Checkbox, Table, Typography, Progress, message } from 'antd';
+import { Spin, Radio, Checkbox, Table, Typography, Progress } from 'antd';
 import requests from '../../utills/requests';
 
 const { Title, Paragraph } = Typography;
@@ -8,7 +8,6 @@ const { Title, Paragraph } = Typography;
 export default function Play() {
   const { playerId } = useParams();
   const [loading, setLoading] = useState(true);
-  const [submitting, setSubmitting] = useState(false);
   const [gameState, setGameState] = useState({
     started: false,
     position: -1,
@@ -19,68 +18,54 @@ export default function Play() {
     timeLeft: 0
   });
 
-  // 1. Poll game status
+  // Poll game status
   useEffect(() => {
     const pollStatus = async () => {
-      try {
-        const res = await requests.get(`/play/${playerId}/status`);
-        console.log('Game status:', res);
+      const res = await requests.get(`/play/${playerId}/status`);
+      console.log('Game status:', res);
+      setGameState(prev => ({
+        ...prev,
+        started: res.started,
+        position: res.position || -1
+      }));
+
+      // If game has started, fetch current question
+      if (res.started && res.position >= 0) {
+        const { question } = await requests.get(`/play/${playerId}/question`);
+        if (question) {
+          // Calculate remaining time
+          const elapsed = (Date.now() - new Date(res.isoTimeLastQuestionStarted).getTime()) / 1000;
+          const timeLeft = Math.max(question.duration - elapsed, 0);
+          
+          setGameState(prev => ({
+            ...prev,
+            question,
+            position: res.position,
+            timeLeft,
+            answers: [],
+            correctAnswers: null,
+          }));
+        }
+      }
+
+      // Check for game end
+      if (!res.started && gameState.started) {
+        const results = await requests.get(`/play/${playerId}/results`);
         setGameState(prev => ({
           ...prev,
-          started: res.started,
-          position: res.position || -1  // update position
+          results
         }));
-
-        // If game has started, fetch current question
-        if (res.started && res.position >= 0) {  // modified condition
-          try {
-            const { question } = await requests.get(`/play/${playerId}/question`);
-            if (question) {
-              // Calculate remaining time
-              const elapsed = (Date.now() - new Date(res.isoTimeLastQuestionStarted).getTime()) / 1000;
-              const timeLeft = Math.max(question.duration - elapsed, 0);
-              
-              setGameState(prev => ({
-                ...prev,
-                question,
-                position: res.position,  // ensure position is synchronized
-                timeLeft,
-                answers: [], // Clear answers for new question
-                correctAnswers: null, // Reset correctAnswers
-              }));
-              setLoading(false);
-            }
-          } catch (e) {
-            console.error('Error fetching question:', e);
-          }
-        } else {
-          setLoading(false);  // set loading to false even on error
-        }
-
-        // Check for game end
-        if (!res.started && gameState.started) {
-          try {
-            const results = await requests.get(`/play/${playerId}/results`);
-            setGameState(prev => ({
-              ...prev,
-              results
-            }));
-          } catch (e) {
-            console.error('Error fetching results:', e);
-          }
-        }
-      } catch (e) {
-        console.error('Error polling status:', e);
-        setLoading(false);  // 出错时也要设置loading为false
       }
+
+      setLoading(false);
     };
 
     const statusInterval = setInterval(pollStatus, 1000);
-    pollStatus(); // execute immediately
+    pollStatus();
     return () => clearInterval(statusInterval);
-  }, [playerId, gameState.started]);  // Add gameState.started as dependency
+  }, [playerId, gameState.started]);
 
-  // 2. Countdown timer
+  // Countdown timer
   useEffect(() => {
     if (!gameState.started || !gameState.question || gameState.timeLeft <= 0) return;
 
@@ -94,20 +79,16 @@ export default function Play() {
     return () => clearInterval(timer);
   }, [gameState.started, gameState.question, gameState.timeLeft]);
 
-  // 3. Fetch answers when timer ends
+  // Fetch answers when timer ends
   useEffect(() => {
     if (!gameState.started || !gameState.question || gameState.timeLeft > 0 || gameState.correctAnswers) return;
 
     const getAnswers = async () => {
-      try {
-        const res = await requests.get(`/play/${playerId}/answer`);
-        setGameState(prev => ({
-          ...prev,
-          correctAnswers: res.answers
-        }));
-      } catch (e) {
-        console.error('Error getting answers:', e);
-      }
+      const res = await requests.get(`/play/${playerId}/answer`);
+      setGameState(prev => ({
+        ...prev,
+        correctAnswers: res.answers
+      }));
     };
 
     getAnswers();
@@ -115,81 +96,25 @@ export default function Play() {
 
   // Submit answer
   const submitAnswers = async (values) => {
-    try {
-      // Check game state
-      if (gameState.position === -1) {
-        message.error('Game has not started yet, please wait');
-        return;
-      }
-
-      if (gameState.timeLeft <= 0) {
-        message.error('Time is up, cannot submit answer');
-        return;
-      }
-      
-      if (submitting) {
-        message.warning('Submitting answer, please wait');
-        return;
-      }
-
-      setSubmitting(true);
-      // Ensure answer is an array
-      const answers = Array.isArray(values) ? values : [values];
-      console.log('Answer submission info:', {
-        answers,
-        playerId,
-        gameState: {
-          position: gameState.position,
-          started: gameState.started,
-          timeLeft: gameState.timeLeft,
-          question: gameState.question
-        }
-      });
-      
-      // Send answer array wrapped in an object
-      const response = await requests.put(`/play/${playerId}/answer`, { answersFromRequest: answers });
-      console.log('Answer submission response:', response);
-      
-      setGameState(prev => ({
-        ...prev,
-        answers
-      }));
-      message.success('Answer submitted successfully');
-    } catch (err) {
-      console.error('Submit answer error details:', {
-        error: err,
-        message: err.message,
-        stack: err.stack,
-        values: values,
-        playerId: playerId,
-        gameState: {
-          position: gameState.position,
-          started: gameState.started,
-          timeLeft: gameState.timeLeft,
-          question: gameState.question
-        }
-      });
-      
-      if (err.message.includes('Player ID does not refer to valid player id')) {
-        message.error('Invalid player ID, please rejoin the game');
-      } else if (err.message.includes('Session has not started yet')) {
-        message.error('Game has not started yet, please wait');
-      } else if (err.message.includes('Can\'t answer question once answer is available')) {
-        message.error('Answer is already available, cannot submit');
-      } else {
-        message.error('Submit answer failed: ' + (err.message || 'Unknown error'));
-      }
-    } finally {
-      setSubmitting(false);
-    }
+    if (!values) return;
+    
+    // Ensure answer is an array
+    const answers = Array.isArray(values) ? values : [values];
+    
+    await requests.put(`/play/${playerId}/answer`, { answers });
+    
+    setGameState(prev => ({
+      ...prev,
+      answers
+    }));
   };
 
   if (loading) {
     return <Spin tip="Loading..." />;
   }
 
-  // 等待游戏开始
-  if (!gameState.started || gameState.position === -1) {  // 修改判断条件
+  // Waiting for game to start
+  if (!gameState.started || gameState.position === -1) {
     return (
       <div style={{ padding: 24, textAlign: 'center' }}>
         <Title level={2}>Welcome to BigBrain</Title>
@@ -199,7 +124,7 @@ export default function Play() {
     );
   }
 
-  // 显示最终结果
+  // Show final results
   if (!gameState.started && gameState.results) {
     const resultData = gameState.results.map((ans, idx) => ({
       key: idx,
@@ -226,7 +151,7 @@ export default function Play() {
     );
   }
 
-  // 显示问题
+  // Show question
   if (gameState.question && !gameState.correctAnswers) {
     const { question } = gameState;
     const type = question.type || 'single';
@@ -241,7 +166,7 @@ export default function Play() {
         <Radio.Group
           onChange={e => submitAnswers(e.target.value)}
           value={gameState.answers[0]}
-          disabled={submitting || gameState.timeLeft <= 0}
+          disabled={gameState.timeLeft <= 0}
         >
           {options.map((opt, idx) => (
             <Radio key={idx} value={opt} style={{ display: 'block', marginBottom: 8 }}>
@@ -261,7 +186,7 @@ export default function Play() {
           options={options}
           value={gameState.answers}
           onChange={submitAnswers}
-          disabled={submitting || gameState.timeLeft <= 0}
+          disabled={gameState.timeLeft <= 0}
         />
       );
     }
@@ -292,17 +217,16 @@ export default function Play() {
             status="active"
           />
         </div>
-        {submitting && <Spin tip="Submitting answer..." />}
         {answerComponent}
       </div>
     );
   }
 
-  // 显示答案
+  // Show answer
   if (gameState.question && gameState.correctAnswers) {
     return (
       <div style={{ padding: 24 }}>
-        <Title level={4}>Time&apos;s up!</Title>
+        <Title level={4}>Time's up!</Title>
         <Paragraph>
           Correct answer(s): {gameState.correctAnswers.join(', ')}
         </Paragraph>
