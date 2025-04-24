@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import {
   Button,
@@ -65,13 +65,13 @@ export default function GameEdit() {
       const updatedAll = all.map((g) =>
         g.id === +gameId
           ? {
-              ...g,
-              name: vals.name,
-              description: vals.description,
-              thumbnail: fileList.length
-                ? fileList[0].thumbUrl || fileList[0].url
-                : g.thumbnail,
-            }
+            ...g,
+            name: vals.name,
+            description: vals.description,
+            thumbnail: fileList.length
+              ? fileList[0].thumbUrl || fileList[0].url
+              : g.thumbnail,
+          }
           : g,
       );
       await requests.put("/admin/games", { games: updatedAll });
