@@ -225,10 +225,13 @@ export default function Dashboard() {
                       </Button>
                     )
                   ) : (
-                    <div style={{ marginTop: 8 }}>
-                      <strong>Session ID:</strong> {item.active}
+                    <div style={{ marginTop: 8, display: 'flex', alignItems: 'center' }}>
+                      <strong>Session ID:</strong>&nbsp;{item.active}
+                      <Button type="link" size="small" onClick={() => navigate(`/session/${item.active}`)}>
+                        管理游戏
+                      </Button>
                       <Button type="default" size="small" style={{ marginLeft: 8 }} onClick={() => handleStopSession(item.id, item.active)}>
-                        Stop Session
+                        停止游戏
                       </Button>
                     </div>
                   )}
