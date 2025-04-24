@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from 'react';
-import { List, Card, Avatar, Modal, Button, Dropdown, message, Upload, Form, Input, Popconfirm, Divider } from 'antd';
+import { useState, useEffect } from 'react';
+import { List, Card, Avatar, Modal, Button, Dropdown, message, Upload, Form, Input, Popconfirm } from 'antd';
 import { Link, useNavigate } from 'react-router-dom';
 import { UserOutlined, PlusOutlined, EditOutlined, DeleteOutlined, CopyOutlined } from '@ant-design/icons';
 import { ifLogin } from '../../utills/index';
 import requests from '../../utills/requests';
+import { getGameById } from '../../utills/api';
 
 export default function Dashboard() {
   const [modalVisible, setModalVisible] = useState(false);
@@ -169,7 +170,7 @@ export default function Dashboard() {
       {/* 动态渲染游戏列表或无游戏提示 */}
       {(!Array.isArray(games) || games.length === 0) ? (
         <div style={{ textAlign: 'center', marginTop: 20 }}>
-          <p>No games available. Click "Create Game" to create a new game.</p>
+          <p>No games available. Click &quot;Create Game&quot; to create a new game.</p>
         </div>
       ) : (
         <List
@@ -303,9 +304,4 @@ export default function Dashboard() {
       </Modal>
     </div>
   );
-}
-
-export async function getGameById(id) {
-  const { games } = await requests.get('/admin/games');
-  return games.find(g => g.id === +id);
 }
