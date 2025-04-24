@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams } from 'react-router-dom';
 import { 
   Spin, 
@@ -80,6 +80,28 @@ export default function Play() {
   });
   const [selectedAnswers, setSelectedAnswers] = useState([]);
   const [submitting, setSubmitting] = useState(false);
+  const [hasSubmitted, setHasSubmitted] = useState(false);
+  
+  // 使用 useRef 来存储定时器
+  const timerRef = useRef(null);
+  const pollTimerRef = useRef(null);
+
+  // 清理所有定时器
+  const clearAllTimers = () => {
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+      timerRef.current = null;
+    }
+    if (pollTimerRef.current) {
+      clearInterval(pollTimerRef.current);
+      pollTimerRef.current = null;
+    }
+  };
+
+  // 组件卸载时清理
+  useEffect(() => {
+    return () => clearAllTimers();
+  }, []);
 
   // 轮询游戏状态
   useEffect(() => {
@@ -99,6 +121,7 @@ export default function Play() {
           loading: false
         }));
       } catch (error) {
+        console.error('Poll game status error:', error);
         setGameState(prev => ({
           ...prev,
           error: '获取游戏状态失败',
@@ -107,8 +130,20 @@ export default function Play() {
       }
     };
 
-    const interval = setInterval(pollGameStatus, 1000);
-    return () => clearInterval(interval);
+    // 清理之前的轮询定时器
+    if (pollTimerRef.current) {
+      clearInterval(pollTimerRef.current);
+    }
+
+    // 设置新的轮询定时器
+    pollGameStatus();
+    pollTimerRef.current = setInterval(pollGameStatus, 1000);
+
+    return () => {
+      if (pollTimerRef.current) {
+        clearInterval(pollTimerRef.current);
+      }
+    };
   }, [playerId]);
 
   // 获取当前问题
@@ -127,6 +162,10 @@ export default function Play() {
           timeLeft: timeLeft
         }));
 
+        // 重置答案状态
+        setSelectedAnswers([]);
+        setHasSubmitted(false);
+
         // 启动倒计时
         if (timeLeft > 0) {
           startCountdown(timeLeft);
@@ -136,6 +175,7 @@ export default function Play() {
         }
       }
     } catch (error) {
+      console.error('Fetch question error:', error);
       setGameState(prev => ({
         ...prev,
         error: '获取问题失败'
@@ -145,15 +185,25 @@ export default function Play() {
 
   // 倒计时
   const startCountdown = (duration) => {
-    const timer = setInterval(() => {
+    // 清理之前的定时器
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+    }
+
+    const startTime = Date.now();
+    const endTime = startTime + duration * 1000;
+
+    timerRef.current = setInterval(() => {
+      const now = Date.now();
+      const remaining = Math.max(0, Math.ceil((endTime - now) / 1000));
+      
       setGameState(prev => {
-        const newTimeLeft = prev.timeLeft - 1;
-        if (newTimeLeft <= 0) {
-          clearInterval(timer);
+        if (remaining <= 0) {
+          clearInterval(timerRef.current);
           fetchAnswers();
           return { ...prev, timeLeft: 0 };
         }
-        return { ...prev, timeLeft: newTimeLeft };
+        return { ...prev, timeLeft: remaining };
       });
     }, 1000);
   };
@@ -164,11 +214,14 @@ export default function Play() {
       const response = await fetch(`${BASE_URL}/play/${playerId}/answer`);
       const data = await response.json();
       
-      setGameState(prev => ({
-        ...prev,
-        correctAnswers: data.answers
-      }));
+      if (data.answers) {
+        setGameState(prev => ({
+          ...prev,
+          correctAnswers: data.answers
+        }));
+      }
     } catch (error) {
+      console.error('Fetch answers error:', error);
       // 如果获取答案失败，可能是因为答案还未公布，继续轮询
       setTimeout(fetchAnswers, 1000);
     }
@@ -181,6 +234,11 @@ export default function Play() {
       return;
     }
 
+    if (hasSubmitted) {
+      message.info('已经提交过答案了');
+      return;
+    }
+
     setSubmitting(true);
     try {
       await fetch(`${BASE_URL}/play/${playerId}/answer`, {
@@ -190,28 +248,14 @@ export default function Play() {
         },
         body: JSON.stringify({ answers: selectedAnswers })
       });
+      
+      setHasSubmitted(true);
       message.success('答案已提交');
     } catch (error) {
+      console.error('Submit answer error:', error);
       message.error('提交答案失败');
     } finally {
       setSubmitting(false);
-    }
-  };
-
-  // 处理答案选择
-  const handleAnswerSelect = (value) => {
-    const { question } = gameState;
-    if (!question) return;
-
-    if (question.type === 'single') {
-      setSelectedAnswers([value]);
-    } else if (question.type === 'multiple') {
-      const newAnswers = selectedAnswers.includes(value)
-        ? selectedAnswers.filter(a => a !== value)
-        : [...selectedAnswers, value];
-      setSelectedAnswers(newAnswers);
-    } else if (question.type === 'judgement') {
-      setSelectedAnswers([value]);
     }
   };
 
@@ -259,7 +303,7 @@ export default function Play() {
           <Checkbox.Group
             value={selectedAnswers}
             onChange={setSelectedAnswers}
-            disabled={!!correctAnswers || submitting}
+            disabled={!!correctAnswers || submitting || hasSubmitted}
           >
             <Space direction="vertical" style={{ width: '100%' }}>
               {question.answers.map((answer, index) => (
@@ -277,7 +321,7 @@ export default function Play() {
           <Radio.Group
             value={selectedAnswers[0]}
             onChange={(e) => setSelectedAnswers([e.target.value])}
-            disabled={!!correctAnswers || submitting}
+            disabled={!!correctAnswers || submitting || hasSubmitted}
           >
             <Space direction="vertical" style={{ width: '100%' }}>
               {question.answers.map((answer, index) => (
@@ -296,7 +340,6 @@ export default function Play() {
     );
   };
 
-  // 渲染游戏界面
   if (gameState.loading) {
     return (
       <div style={styles.container}>
@@ -348,11 +391,11 @@ export default function Play() {
             {renderMedia()}
             {renderAnswerOptions()}
 
-            {!gameState.correctAnswers && !submitting && gameState.timeLeft > 0 && (
+            {!gameState.correctAnswers && !hasSubmitted && gameState.timeLeft > 0 && (
               <div style={{ marginTop: 24, textAlign: 'center' }}>
                 <button
                   onClick={submitAnswer}
-                  disabled={selectedAnswers.length === 0}
+                  disabled={selectedAnswers.length === 0 || submitting}
                   style={{
                     padding: '8px 24px',
                     fontSize: 16,
@@ -360,10 +403,11 @@ export default function Play() {
                     backgroundColor: '#1890ff',
                     color: 'white',
                     border: 'none',
-                    cursor: 'pointer'
+                    cursor: 'pointer',
+                    opacity: (selectedAnswers.length === 0 || submitting) ? 0.5 : 1
                   }}
                 >
-                  提交答案
+                  {submitting ? '提交中...' : '提交答案'}
                 </button>
               </div>
             )}
