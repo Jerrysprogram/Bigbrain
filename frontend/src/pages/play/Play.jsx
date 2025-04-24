@@ -7,36 +7,39 @@ const { Title, Paragraph } = Typography;
 
 export default function Play() {
   const { playerId } = useParams();
+  const [loading, setLoading] = useState(true);
+  const [started, setStarted] = useState(false);
   const [question, setQuestion] = useState(null);
   const [answers, setAnswers] = useState([]);
   const [correctAnswers, setCorrectAnswers] = useState(null);
   const [results, setResults] = useState(null);
   const [timer, setTimer] = useState(0);
-  const [loading, setLoading] = useState(true);
-  const [started, setStarted] = useState(false);
 
-  // 1. 轮询游戏是否开始，一旦开始，拉取当前问题并初始化倒计时
+  // 1. 轮询会话是否开始
   useEffect(() => {
     const interval = setInterval(async () => {
       try {
         const { started } = await requests.get(`/play/${playerId}/status`);
         if (started && !started) {
           setStarted(true);
-          // 获取题目并初始化
+          // 游戏开始后拉题
           const { question: q } = await requests.get(`/play/${playerId}/question`);
           setQuestion(q);
           setAnswers([]);
           setCorrectAnswers(null);
+          // 初始化倒计时（直接用 duration）
           setTimer(q.duration);
           setLoading(false);
           clearInterval(interval);
         }
-      } catch {}
+      } catch (e) {
+        // ignore
+      }
     }, 1000);
     return () => clearInterval(interval);
   }, [playerId]);
 
-  // 2. 倒计时逻辑，到 0 时拉取正确答案
+  // 2. 基于前端倒计时，到0时自动取答案
   useEffect(() => {
     if (!started || !question || correctAnswers) return;
     if (timer <= 0) {
