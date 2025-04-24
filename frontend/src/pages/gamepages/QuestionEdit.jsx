@@ -106,7 +106,7 @@ export default function QuestionEdit() {
       </Button>
       <h2>Edit Question #{questionId}</h2>
       <Form form={form} layout="vertical">
-        {/* 题目类型 */}
+        {/* question type */}
         <Form.Item
           name="type"
           label="Question Type"
@@ -118,7 +118,7 @@ export default function QuestionEdit() {
             <Option value="judgement">Judgement</Option>
           </Select>
         </Form.Item>
-        {/* 题干 */}
+        {/* question text */}
         <Form.Item
           name="text"
           label="Question Text"
@@ -126,7 +126,7 @@ export default function QuestionEdit() {
         >
           <Input.TextArea rows={3} placeholder="Enter question text" />
         </Form.Item>
-        {/* 答题时限 */}
+        {/* question duration */}
         <Form.Item
           name="duration"
           label="Time Limit (sec)"
@@ -134,7 +134,7 @@ export default function QuestionEdit() {
         >
           <InputNumber min={1} placeholder="Enter time limit (sec)" />
         </Form.Item>
-        {/* 分值 */}
+        {/* points */}
         <Form.Item
           name="points"
           label="Points"
@@ -142,7 +142,7 @@ export default function QuestionEdit() {
         >
           <InputNumber min={1} placeholder="Enter points" />
         </Form.Item>
-        {/* 媒体 */}
+        {/* media */}
         <Form.Item
           label="Media"
           help="Optional: upload image or provide YouTube URL"
@@ -176,7 +176,7 @@ export default function QuestionEdit() {
             </TabPane>
           </Tabs>
         </Form.Item>
-        {/* 答案选项 */}
+        {/* answer options */}
         <Form.List
           name="answers"
           initialValue={
@@ -228,7 +228,7 @@ export default function QuestionEdit() {
             </>
           )}
         </Form.List>
-        {/* 保存按钮 */}
+        {/* save button */}
         <Form.Item>
           <Button type="primary" onClick={handleSave} style={{ marginTop: 16 }}>
             Save Question

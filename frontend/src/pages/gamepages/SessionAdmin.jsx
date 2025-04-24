@@ -35,7 +35,7 @@ export default function SessionAdmin() {
   const [loading, setLoading] = useState(true);
   const [timer, setTimer] = useState(0);
 
-  // 初始化：获取对应 gameId
+  //initialize game id
   useEffect(() => {
     async function init() {
       try {
@@ -54,14 +54,14 @@ export default function SessionAdmin() {
     init();
   }, [sessionId]);
 
-  // 拉取 session 状态
+  // fetch session status
   const fetchStatus = async () => {
     try {
       const { results: s } = await requests.get(
         `/admin/session/${sessionId}/status`,
       );
       setStatus(s);
-      // 初始化/更新倒计时
+      // initialize/update timer
       if (s.active) {
         const elapsed =
           (Date.now() - new Date(s.isoTimeLastQuestionStarted).getTime()) /
@@ -77,7 +77,7 @@ export default function SessionAdmin() {
     }
   };
 
-  // 拉取结果
+  // fetch results
   const fetchResults = async () => {
     try {
       const data = await requests.get(`/admin/session/${sessionId}/results`);
@@ -94,7 +94,7 @@ export default function SessionAdmin() {
     }
   };
 
-  // 初始化拉取状态
+  // initialize fetch status
   useEffect(() => {
     async function load() {
       setLoading(true);
@@ -107,7 +107,7 @@ export default function SessionAdmin() {
     if (gameId) load();
   }, [gameId]);
 
-  // 推进下一题
+  // advance to next question
   const handleAdvance = async () => {
     try {
       await requests.post(`/admin/game/${gameId}/mutate`, {
@@ -120,7 +120,7 @@ export default function SessionAdmin() {
     }
   };
 
-  // 停止会话
+  // stop session
   const handleStop = async () => {
     try {
       await requests.post(`/admin/game/${gameId}/mutate`, {
@@ -134,7 +134,7 @@ export default function SessionAdmin() {
     }
   };
 
-  // 倒计时 effect：当会话活跃时每秒递减 timer
+  // timer effect: decrease timer every second when session is active
   useEffect(() => {
     let timerId;
     if (status && status.active) {
@@ -149,11 +149,11 @@ export default function SessionAdmin() {
     return <Spin tip="Loading session..." />;
   }
 
-  // 活跃会话界面
+  // active session interface
   if (status.active) {
     const total = status.questions.length;
     const pos = status.position;
-    // 计算剩余秒
+    // calculate remaining seconds
     const remaining = timer;
     return (
       <div style={{ padding: 24 }}>
@@ -208,8 +208,8 @@ export default function SessionAdmin() {
     );
   }
 
-  // 会话结束，展示结果
-  // 计算分数
+  // session ended, show results
+  // calculate scores
   const safeResults = Array.isArray(results) ? results : [];
   const scores = safeResults.map((player) => {
     const score = player.answers.reduce(
