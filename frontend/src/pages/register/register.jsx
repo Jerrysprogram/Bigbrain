@@ -1,4 +1,3 @@
-import React from 'react';
 import { Button, Form, Input, message, Typography } from 'antd';
 import requests from '../../utills/requests';
 import { useNavigate, Link } from 'react-router-dom';
