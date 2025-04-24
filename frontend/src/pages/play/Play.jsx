@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { Spin, Radio, Checkbox, Table, Typography, Progress, message } from 'antd';
 import requests from '../../utills/requests';
@@ -302,7 +302,7 @@ export default function Play() {
   if (gameState.question && gameState.correctAnswers) {
     return (
       <div style={{ padding: 24 }}>
-        <Title level={4}>Time's up!</Title>
+        <Title level={4}>Time&apos;s up!</Title>
         <Paragraph>
           Correct answer(s): {gameState.correctAnswers.join(', ')}
         </Paragraph>
