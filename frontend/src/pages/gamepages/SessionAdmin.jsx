@@ -167,6 +167,9 @@ export default function SessionAdmin() {
   return (
     <div style={{ padding: 24 }}>
       <h2>Results for Session {sessionId}</h2>
+      <Button type="primary" style={{ marginBottom: 16 }} onClick={() => navigate('/dashboard')}>
+        Back to Dashboard
+      </Button>
       <Table dataSource={top5} columns={columns} rowKey="name" pagination={false} />
     </div>
   );
