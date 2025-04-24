@@ -7,51 +7,45 @@ const { Title, Paragraph } = Typography;
 
 export default function Play() {
   const { playerId } = useParams();
-  const [loading, setLoading] = useState(true);
-  const [status, setStatus] = useState(null);
   const [question, setQuestion] = useState(null);
   const [answers, setAnswers] = useState([]);
   const [correctAnswers, setCorrectAnswers] = useState(null);
   const [results, setResults] = useState(null);
   const [timer, setTimer] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [started, setStarted] = useState(false);
 
-  // 轮询游戏状态：取 started, 进入问题, 或取最终结果
+  // 1. 轮询游戏是否开始，一旦开始，拉取当前问题并初始化倒计时
   useEffect(() => {
     const interval = setInterval(async () => {
       try {
         const { started } = await requests.get(`/play/${playerId}/status`);
-        setStatus({ started });
-        if (started && question === null) {
-          // 游戏开始后取题
+        if (started && !started) {
+          setStarted(true);
+          // 获取题目并初始化
           const { question: q } = await requests.get(`/play/${playerId}/question`);
           setQuestion(q);
           setAnswers([]);
           setCorrectAnswers(null);
-          setLoading(false);
           setTimer(q.duration);
-        }
-        if (!started && question !== null && results === null) {
-          // 会话结束，取结果
-          const rres = await requests.get(`/play/${playerId}/results`);
-          setResults(rres);
           setLoading(false);
+          clearInterval(interval);
         }
       } catch {}
     }, 1000);
     return () => clearInterval(interval);
-  }, [playerId, question]);
+  }, [playerId]);
 
-  // 根据 timer 倒计时，到 0 时取本题答案
+  // 2. 倒计时逻辑，到 0 时拉取正确答案
   useEffect(() => {
-    if (question && correctAnswers === null) {
-      if (timer <= 0) {
-        requests.get(`/play/${playerId}/answer`).then(res => setCorrectAnswers(res.answers));
-      } else {
-        const id = setTimeout(() => setTimer(timer - 1), 1000);
-        return () => clearTimeout(id);
-      }
+    if (!started || !question || correctAnswers) return;
+    if (timer <= 0) {
+      requests.get(`/play/${playerId}/answer`).then(res => setCorrectAnswers(res.answers));
+    } else {
+      const id = setTimeout(() => setTimer(timer - 1), 1000);
+      return () => clearTimeout(id);
     }
-  }, [timer, question, correctAnswers]);
+  }, [timer, question, correctAnswers, started]);
 
   const submitAnswers = async (vals) => {
     try {
@@ -62,12 +56,10 @@ export default function Play() {
     }
   };
 
-  if (loading || !status) {
-    return <Spin tip="Loading..." />;
-  }
+  if (loading) return <Spin tip="Loading..." />;
 
   // not started
-  if (!status.started && question === null) {
+  if (!started && !question) {
     return (
       <div className="lobby-screen">
         <Title level={2}>Welcome to BigBrain Lobby</Title>
@@ -78,14 +70,14 @@ export default function Play() {
   }
 
   // final results
-  if (!status.started && results) {
+  if (!started && results) {
     // merge question results with scoring
     const merged = results.map((ans, idx) => ({
       key: idx,
       question: idx + 1,
       time: Math.round((new Date(ans.answeredAt) - new Date(ans.questionStartedAt)) / 1000),
       correct: ans.correct ? 'Yes' : 'No',
-      points: ans.correct ? (status.questions[idx]?.points || 0) : 0,
+      points: ans.correct ? (question?.points || 0) : 0,
     }));
     const totalScore = merged.reduce((sum, row) => sum + row.points, 0);
     const columns = [
@@ -104,7 +96,7 @@ export default function Play() {
   }
 
   // question ongoing
-  if (status.started && question && correctAnswers === null) {
+  if (question && !correctAnswers) {
     const type = question.type;
     let inputComponent;
     if (type === 'single' || type === 'judgement') {
@@ -137,7 +129,7 @@ export default function Play() {
   }
 
   // answer feedback
-  if (status.started && question && correctAnswers) {
+  if (question && correctAnswers) {
     return (
       <div style={{ padding: 24 }}>
         <Title level={4}>Correct Answers: {correctAnswers.join(', ')}</Title>
