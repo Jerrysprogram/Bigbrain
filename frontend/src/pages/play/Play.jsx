@@ -134,6 +134,39 @@ export default function Play() {
     }
   };
 
+  // 等待游戏开始
+  if (!gameState.started || gameState.position === -1) {
+    return (
+      <div style={{ padding: 24, textAlign: 'center' }}>
+        <Title level={2}>Welcome to BigBrain</Title>
+        <Paragraph>Please wait for the game to start...</Paragraph>
+      </div>
+    );
+  }
+
+  // 显示最终结果
+  if (!gameState.started && gameState.results) {
+    return (
+      <div style={{ padding: 24 }}>
+        <Title level={3}>Game Results</Title>
+        <Table
+          dataSource={gameState.results.map((ans, idx) => ({
+            key: idx,
+            question: idx + 1,
+            time: Math.round((new Date(ans.answeredAt) - new Date(ans.questionStartedAt)) / 1000),
+            correct: ans.correct ? 'Yes' : 'No'
+          }))}
+          columns={[
+            { title: 'Question', dataIndex: 'question' },
+            { title: 'Time (s)', dataIndex: 'time' },
+            { title: 'Correct', dataIndex: 'correct' }
+          ]}
+          pagination={false}
+        />
+      </div>
+    );
+  }
+
   // ... 其他代码将在后续部分添加 ...
   return <Spin tip="Loading..." />;
 }
