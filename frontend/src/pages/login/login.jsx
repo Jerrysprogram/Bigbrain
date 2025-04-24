@@ -8,23 +8,23 @@ const { Title } = Typography;
 
 // Login page component
 export default function Login() {
-  // 初始化路由导航
+  // Initialize navigation
   const navigate = useNavigate();
   const onFinish = values => {
     console.log('Received values of form: ', values);
     const { email, password } = values;
-    // 发起登录请求
+    // Send login request
     requests.post('/admin/auth/login', { email, password })
       .then(res => {
         if (res && res.token) {
-          // 保存token并提示
+          // Save token and show success message
           localStorage.setItem('token', res.token);
           localStorage.setItem('email', values.email);
           message.success('Login successful!');
-          // 跳转到dashboard页面
+          // Redirect to dashboard
           navigate('/dashboard');
         } else {
-          // 登录失败时显示错误信息
+          // Show error message on login failure
           message.error('Invalid email or password');
         }
       });
