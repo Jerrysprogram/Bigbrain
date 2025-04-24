@@ -1,23 +1,23 @@
-import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { Form, Input, Button, message, Card } from 'antd';
-import requests from '../../utills/requests';
+import React, { useState, useEffect } from "react";
+import { useParams, useNavigate } from "react-router-dom";
+import { Form, Input, Button, message, Card } from "antd";
+import requests from "../../utills/requests";
 
 export default function Join() {
   const { sessionId: paramSessionId } = useParams();
   const navigate = useNavigate();
   const [form] = Form.useForm();
-  const [sessionId, setSessionId] = useState(paramSessionId || '');
+  const [sessionId, setSessionId] = useState(paramSessionId || "");
 
   useEffect(() => {
-    form.setFieldsValue({ sessionId, name: '' });
+    form.setFieldsValue({ sessionId, name: "" });
   }, [sessionId]);
 
   const handleSubmit = async (values) => {
     const sid = values.sessionId;
     const name = values.name;
     if (!sid || !name) {
-      message.error('Session ID and name are required');
+      message.error("Session ID and name are required");
       return;
     }
     try {
@@ -30,23 +30,26 @@ export default function Join() {
   };
 
   return (
-    <Card title="Join a Game Session" style={{ maxWidth: 400, margin: '50px auto' }}>
+    <Card
+      title="Join a Game Session"
+      style={{ maxWidth: 400, margin: "50px auto" }}
+    >
       <Form form={form} onFinish={handleSubmit} layout="vertical">
         <Form.Item
           name="sessionId"
           label="Session ID"
-          rules={[{ required: true, message: 'Please enter session ID' }]}
+          rules={[{ required: true, message: "Please enter session ID" }]}
         >
           <Input
             placeholder="Enter session ID"
             value={sessionId}
-            onChange={e => setSessionId(e.target.value)}
+            onChange={(e) => setSessionId(e.target.value)}
           />
         </Form.Item>
         <Form.Item
           name="name"
           label="Your Name"
-          rules={[{ required: true, message: 'Please enter your name' }]}
+          rules={[{ required: true, message: "Please enter your name" }]}
         >
           <Input placeholder="Enter your name" />
         </Form.Item>
@@ -58,4 +61,4 @@ export default function Join() {
       </Form>
     </Card>
   );
-} 
+}
