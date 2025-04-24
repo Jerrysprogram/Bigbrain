@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Button, message, Spin, Table, Space } from 'antd';
+import { Button, message, Spin, Table, Space, Card } from 'antd';
 import requests from '../../utills/requests';
 
 export default function SessionAdmin() {
@@ -10,6 +10,7 @@ export default function SessionAdmin() {
   const [status, setStatus] = useState(null);
   const [results, setResults] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [timer, setTimer] = useState(0);
 
   // 初始化：获取对应 gameId
   useEffect(() => {
@@ -98,13 +99,39 @@ export default function SessionAdmin() {
   if (status.active) {
     const total = status.questions.length;
     const pos = status.position;
+    // 计算剩余秒
+    const remaining = timer;
     return (
       <div style={{ padding: 24 }}>
-        <h2>Session {sessionId}</h2>
-        <p>Question {pos + 1} of {total}</p>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+          <h2>游戏会话: {sessionId}</h2>
+          <div>
+            <Button onClick={() => {
+              fetchStatus().then(s => { if (!s.active) fetchResults(); });
+            }} style={{ marginRight: 8 }}>刷新</Button>
+            <Button onClick={() => navigate('/dashboard')} type="primary">返回仪表盘</Button>
+          </div>
+        </div>
+        <Card size="small" style={{ marginBottom: 16 }}>
+          <p><strong>游戏进行中</strong></p>
+          <p>当前问题: {status.questions[pos]?.text || ''} ({pos + 1}/{total})</p>
+          <p>答题倒计时: {Math.round(remaining)} 秒</p>
+          <p>在线玩家数: {status.players.length}</p>
+        </Card>
         <Space>
-          <Button type="primary" onClick={handleAdvance}>Advance</Button>
-          <Button danger onClick={handleStop}>Stop Session</Button>
+          <Button
+            disabled={pos <= 0}
+            onClick={() => message.info('无法返回上一题')}
+          >上一题</Button>
+          <Button
+            disabled={pos >= total - 1}
+            type="primary"
+            onClick={handleAdvance}
+          >下一题</Button>
+          <Button
+            danger
+            onClick={handleStop}
+          >结束会话</Button>
         </Space>
       </div>
     );
