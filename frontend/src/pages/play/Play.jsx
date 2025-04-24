@@ -8,6 +8,7 @@ const { Title, Paragraph } = Typography;
 export default function Play() {
   const { playerId } = useParams();
   const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
   const [gameState, setGameState] = useState({
     started: false,
     position: -1,
@@ -107,14 +108,28 @@ export default function Play() {
   // 提交答案
   const submitAnswers = async (values) => {
     try {
+      if (gameState.timeLeft <= 0) {
+        message.error('时间已到，无法提交答案');
+        return;
+      }
+      
+      if (submitting) {
+        message.warning('正在提交答案，请稍候');
+        return;
+      }
+
+      setSubmitting(true);
       const answers = Array.isArray(values) ? values : [values];
       await requests.put(`/play/${playerId}/answer`, { answers });
       setGameState(prev => ({
         ...prev,
         answers
       }));
+      message.success('答案已提交');
     } catch (err) {
-      message.error('Failed to submit answer');
+      message.error('提交答案失败: ' + (err.message || '未知错误'));
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -174,6 +189,7 @@ export default function Play() {
         <Radio.Group
           onChange={e => submitAnswers(e.target.value)}
           value={gameState.answers[0]}
+          disabled={submitting || gameState.timeLeft <= 0}
         >
           {options.map((opt, idx) => (
             <Radio key={idx} value={opt} style={{ display: 'block', marginBottom: 8 }}>
@@ -193,6 +209,7 @@ export default function Play() {
           options={options}
           value={gameState.answers}
           onChange={submitAnswers}
+          disabled={submitting || gameState.timeLeft <= 0}
         />
       );
     }
@@ -223,6 +240,7 @@ export default function Play() {
             status="active"
           />
         </div>
+        {submitting && <Spin tip="正在提交答案..." />}
         {answerComponent}
       </div>
     );
