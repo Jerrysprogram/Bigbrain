@@ -26,7 +26,7 @@ export default function QuestionEdit() {
   const [fileList, setFileList] = useState([]);
   const [videoUrl, setVideoUrl] = useState("");
 
-  // 加载游戏和题目信息
+  // Load game and question information
   useEffect(() => {
     async function load() {
       try {
@@ -36,7 +36,7 @@ export default function QuestionEdit() {
         setGame(g);
         const q = g.questions.find((q) => q.id === +questionId);
         if (!q) throw new Error("Question not found");
-        // 初始化 form
+        // Initialize form fields
         form.setFieldsValue({
           type: q.type,
           text: q.text,
@@ -47,7 +47,7 @@ export default function QuestionEdit() {
             isCorrect: a.isCorrect,
           })),
         });
-        // 媒体
+        // Handle media (image or video)
         if (q.image) {
           setFileList([{ uid: "-1", url: q.image, thumbUrl: q.image }]);
         }
