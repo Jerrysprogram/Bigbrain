@@ -19,24 +19,24 @@ export default function Play() {
     timeLeft: 0
   });
 
-  // 1. 轮询游戏状态
+  // 1. Poll game status
   useEffect(() => {
     const pollStatus = async () => {
       try {
         const res = await requests.get(`/play/${playerId}/status`);
-        console.log('游戏状态:', res);
+        console.log('Game status:', res);
         setGameState(prev => ({
           ...prev,
           started: res.started,
           position: res.position || -1  // 更新position
         }));
 
-        // 如果游戏已经开始，获取当前问题
+        // If game has started, fetch current question
         if (res.started && res.position >= 0) {  // 修改判断条件
           try {
             const { question } = await requests.get(`/play/${playerId}/question`);
             if (question) {
-              // 计算剩余时间
+              // Calculate remaining time
               const elapsed = (Date.now() - new Date(res.isoTimeLastQuestionStarted).getTime()) / 1000;
               const timeLeft = Math.max(question.duration - elapsed, 0);
               
@@ -45,8 +45,8 @@ export default function Play() {
                 question,
                 position: res.position,  // 确保position同步
                 timeLeft,
-                answers: [], // 新题目清空答案
-                correctAnswers: null // 清空正确答案
+                answers: [], // Clear answers for new question
+                correctAnswers: null, // Reset correctAnswers
               }));
               setLoading(false);
             }
@@ -54,10 +54,10 @@ export default function Play() {
             console.error('Error fetching question:', e);
           }
         } else {
-          setLoading(false);  // 即使游戏未开始也要设置loading为false
+          setLoading(false);  // Ensure loading is false even if game hasn't started
         }
 
-        // 游戏结束检查
+        // Check for game end
         if (!res.started && gameState.started) {
           try {
             const results = await requests.get(`/play/${playerId}/results`);
@@ -78,9 +78,9 @@ export default function Play() {
     const statusInterval = setInterval(pollStatus, 1000);
     pollStatus(); // 立即执行一次
     return () => clearInterval(statusInterval);
-  }, [playerId, gameState.started]);  // 添加gameState.started作为依赖
+  }, [playerId, gameState.started]);  // Add gameState.started as dependency
 
-  // 2. 倒计时
+  // 2. Countdown timer
   useEffect(() => {
     if (!gameState.started || !gameState.question || gameState.timeLeft <= 0) return;
 
@@ -94,7 +94,7 @@ export default function Play() {
     return () => clearInterval(timer);
   }, [gameState.started, gameState.question, gameState.timeLeft]);
 
-  // 3. 时间到获取答案
+  // 3. Fetch answers when timer ends
   useEffect(() => {
     if (!gameState.started || !gameState.question || gameState.timeLeft > 0 || gameState.correctAnswers) return;
 
