@@ -1,10 +1,12 @@
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { LockOutlined, UserOutlined } from '@ant-design/icons';
-import { Button, Checkbox, Form, Input, message } from 'antd';
+import { Button, Checkbox, Form, Input, message, Typography } from 'antd';
 import requests from '../../utills/requests';
 
-// 登录页面组件
+const { Title } = Typography;
+
+// Login page component
 export default function Login() {
   // 初始化路由导航
   const navigate = useNavigate();
@@ -28,39 +30,43 @@ export default function Login() {
       });
   };
   return (
-    <Form
-      name="login"
-      initialValues={{ remember: true }}
-      style={{ maxWidth: 360 }}
-      onFinish={onFinish}
-    >
-      <Form.Item
-        name="email"
-        rules={[{ required: true, message: 'Please input your Email!' }]}
-      >
-        <Input prefix={<UserOutlined />} placeholder="Email" />
-      </Form.Item>
-      <Form.Item
-        name="password"
-        rules={[{ required: true, message: 'Please input your Password!' }]}
-      >
-        <Input prefix={<LockOutlined />} type="password" placeholder="Password" />
-      </Form.Item>
-      <Form.Item>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <Form.Item name="remember" valuePropName="checked" noStyle>
-            <Checkbox>Remember me</Checkbox>
+    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', padding: '0 16px' }}>
+      <div style={{ width: 360 }}>
+        <Title level={2} style={{ textAlign: 'center', marginBottom: 24 }}>Login</Title>
+        <Form
+          name="login"
+          initialValues={{ remember: true }}
+          onFinish={onFinish}
+        >
+          <Form.Item
+            name="email"
+            rules={[{ required: true, message: 'Please input your Email!' }]}
+          >
+            <Input prefix={<UserOutlined />} placeholder="Email" />
           </Form.Item>
-          <a href="">Forgot password</a>
-        </div>
-      </Form.Item>
+          <Form.Item
+            name="password"
+            rules={[{ required: true, message: 'Please input your Password!' }]}
+          >
+            <Input prefix={<LockOutlined />} type="password" placeholder="Password" />
+          </Form.Item>
+          <Form.Item>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <Form.Item name="remember" valuePropName="checked" noStyle>
+                <Checkbox>Remember me</Checkbox>
+              </Form.Item>
+              <a href="">Forgot password</a>
+            </div>
+          </Form.Item>
 
-      <Form.Item>
-        <Button block type="primary" htmlType="submit">
-          Log in
-        </Button>
-        or <Link to="/register">Register now!</Link>
-      </Form.Item>
-    </Form>
+          <Form.Item>
+            <Button block type="primary" htmlType="submit">
+              Log in
+            </Button>
+            or <Link to="/register">Register now!</Link>
+          </Form.Item>
+        </Form>
+      </div>
+    </div>
   );
 }
