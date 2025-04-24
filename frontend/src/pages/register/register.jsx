@@ -1,7 +1,7 @@
 import React from 'react';
 import { Button, Form, Input, message, Typography } from 'antd';
 import requests from '../../utills/requests';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 
 const { Title } = Typography;
 
@@ -91,6 +91,9 @@ const Register = () => {
               Register
             </Button>
           </Form.Item>
+          <div style={{ textAlign: 'center', marginTop: 8 }}>
+            or <Link to="/login">Login</Link>
+          </div>
         </Form>
       </div>
     </div>
