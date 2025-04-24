@@ -15,42 +15,43 @@ export default function Play() {
   const [results, setResults] = useState(null);
   const [timer, setTimer] = useState(0);
 
-  // 轮询状态 & 问题/答案
+  // 轮询游戏状态：取 started, 进入问题, 或取最终结果
   useEffect(() => {
-    let interval;
-    async function poll() {
+    const interval = setInterval(async () => {
       try {
-        const res = await requests.get(`/play/${playerId}/status`);
-        setStatus(res);
-        if (!res.started && question === null) {
-          setLoading(false);
-        } else if (res.started && question === null) {
-          const qres = await requests.get(`/play/${playerId}/question`);
-          const q = qres.question;
+        const { started } = await requests.get(`/play/${playerId}/status`);
+        setStatus({ started });
+        if (started && question === null) {
+          // 游戏开始后取题
+          const { question: q } = await requests.get(`/play/${playerId}/question`);
           setQuestion(q);
           setAnswers([]);
           setCorrectAnswers(null);
-          const elapsed = (Date.now() - new Date(q.isoTimeLastQuestionStarted).getTime()) / 1000;
-          setTimer(Math.max(q.duration - elapsed, 0));
-        } else if (res.answerAvailable && correctAnswers === null) {
-          const answerRes = await requests.get(`/play/${playerId}/answer`);
-          setCorrectAnswers(answerRes.answers);
-        } else if (!res.started && question !== null && results === null) {
+          setLoading(false);
+          setTimer(q.duration);
+        }
+        if (!started && question !== null && results === null) {
+          // 会话结束，取结果
           const rres = await requests.get(`/play/${playerId}/results`);
           setResults(rres);
+          setLoading(false);
         }
       } catch {}
-    }
-    interval = setInterval(poll, 1000);
-    poll();
+    }, 1000);
     return () => clearInterval(interval);
-  }, [playerId, question, correctAnswers]);
+  }, [playerId, question]);
 
-  // 倒计时 effect
+  // 根据 timer 倒计时，到 0 时取本题答案
   useEffect(() => {
-    const id = setInterval(() => setTimer(t => (t > 0 ? t - 1 : 0)), 1000);
-    return () => clearInterval(id);
-  }, []);
+    if (question && correctAnswers === null) {
+      if (timer <= 0) {
+        requests.get(`/play/${playerId}/answer`).then(res => setCorrectAnswers(res.answers));
+      } else {
+        const id = setTimeout(() => setTimer(timer - 1), 1000);
+        return () => clearTimeout(id);
+      }
+    }
+  }, [timer, question, correctAnswers]);
 
   const submitAnswers = async (vals) => {
     try {
