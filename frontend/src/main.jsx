@@ -2,8 +2,8 @@
 import { createRoot } from 'react-dom/client'
 import { RouterProvider, createBrowserRouter, Navigate } from 'react-router-dom'
 import 'antd/dist/reset.css'
+import { Spin } from 'antd'
 
-import App from './App.jsx'
 import Login from './pages/login/login.jsx'
 import Register from './pages/register/register.jsx'
 import Dashboard from './pages/dashboard/dashboard.jsx'
