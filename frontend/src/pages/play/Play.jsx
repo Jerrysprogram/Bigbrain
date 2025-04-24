@@ -72,55 +72,94 @@ export default function Play() {
   }, [playerId]);
 
 
-  // 2. 轮询新题目
+  // 2. 倒计时
   useEffect(() => {
-    if (!started || !question) return;
-    const qInterval = setInterval(async () => {
-      try {
-        const { question: q } = await requests.get(`/play/${playerId}/question`);
-        if (q && q.isoTimeLastQuestionStarted !== question.isoTimeLastQuestionStarted) {
-          setQuestion(q);
-          setAnswers([]);
-          setCorrectAnswers(null);
-          const elapsed = (Date.now() - new Date(q.isoTimeLastQuestionStarted).getTime()) / 1000;
-          setTimer(Math.max(q.duration - elapsed, 0));
-        }
-      } catch (e) {
-        console.error('Poll question error:', e);
-      }
+    if (!gameState.started || !gameState.question || gameState.timeLeft <= 0) return;
+
+    const timer = setInterval(() => {
+      setGameState(prev => ({
+        ...prev,
+        timeLeft: Math.max(prev.timeLeft - 1, 0)
+      }));
     }, 1000);
-    return () => clearInterval(qInterval);
-  }, [playerId, started, question]);
 
-  // 3. 倒计时和自动获取答案
+    return () => clearInterval(timer);
+  }, [gameState.started, gameState.question, gameState.timeLeft]);
+
+  // 3. 时间到获取答案
   useEffect(() => {
-    if (!started || !question || correctAnswers) return;
-    
-    if (timer <= 0) {
-      requests.get(`/play/${playerId}/answer`)
-        .then(res => {
-          if (res && res.answers) {
-            setCorrectAnswers(res.answers);
-          }
-        })
-        .catch(e => console.error('Get answer error:', e));
-    } else {
-      const id = setTimeout(() => setTimer(t => Math.max(t - 1, 0)), 1000);
-      return () => clearTimeout(id);
-    }
-  }, [timer, question, correctAnswers, started, playerId]);
+    if (!gameState.started || !gameState.question || gameState.timeLeft > 0 || gameState.correctAnswers) return;
 
-  const submitAnswers = async (vals) => {
-    try {
-      if (!Array.isArray(vals)) {
-        vals = [vals]; // 确保 vals 是数组
+    const getAnswers = async () => {
+      try {
+        const res = await requests.get(`/play/${playerId}/answer`);
+        setGameState(prev => ({
+          ...prev,
+          correctAnswers: res.answers
+        }));
+      } catch (e) {
+        console.error('Error getting answers:', e);
       }
-      await requests.put(`/play/${playerId}/answer`, { answers: vals });
-      setAnswers(vals);
+    };
+
+    getAnswers();
+  }, [gameState.timeLeft, gameState.started, gameState.question, gameState.correctAnswers]);
+
+  // 提交答案
+  const submitAnswers = async (values) => {
+    try {
+      const answers = Array.isArray(values) ? values : [values];
+      await requests.put(`/play/${playerId}/answer`, { answers });
+      setGameState(prev => ({
+        ...prev,
+        answers
+      }));
     } catch (err) {
-      message.error(`Submit answer failed: ${err.message}`);
+      message.error('Failed to submit answer');
     }
   };
+
+  if (loading) {
+    return <Spin tip="Loading..." />;
+  }
+
+  // 等待游戏开始
+  if (!gameState.started && !gameState.results) {
+    return (
+      <div style={{ padding: 24, textAlign: 'center' }}>
+        <Title level={2}>Welcome to BigBrain</Title>
+        <Paragraph>Please wait for the game to start...</Paragraph>
+      </div>
+    );
+  }
+
+  // 显示最终结果
+  if (!gameState.started && gameState.results) {
+    const resultData = gameState.results.map((ans, idx) => ({
+      key: idx,
+      question: idx + 1,
+      time: Math.round((new Date(ans.answeredAt) - new Date(ans.questionStartedAt)) / 1000),
+      correct: ans.correct ? 'Yes' : 'No',
+      points: ans.correct ? (gameState.question?.points || 0) : 0,
+    }));
+
+    return (
+      <div style={{ padding: 24 }}>
+        <Title level={3}>Game Results</Title>
+        <Table
+          dataSource={resultData}
+          columns={[
+            { title: 'Question', dataIndex: 'question' },
+            { title: 'Time (s)', dataIndex: 'time' },
+            { title: 'Correct', dataIndex: 'correct' },
+            { title: 'Points', dataIndex: 'points' },
+          ]}
+          pagination={false}
+        />
+      </div>
+    );
+  }
+
 
   if (loading) return <Spin tip="Loading..." />;
 
