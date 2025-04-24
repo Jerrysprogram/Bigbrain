@@ -157,3 +157,93 @@ export default function Play() {
       });
     }, 1000);
   };
+
+  // 获取答案
+  const fetchAnswers = async () => {
+    try {
+      const response = await fetch(`${BASE_URL}/play/${playerId}/answer`);
+      const data = await response.json();
+      
+      setGameState(prev => ({
+        ...prev,
+        correctAnswers: data.answers
+      }));
+    } catch (error) {
+      // 如果获取答案失败，可能是因为答案还未公布，继续轮询
+      setTimeout(fetchAnswers, 1000);
+    }
+  };
+
+  // 提交答案
+  const submitAnswer = async () => {
+    if (selectedAnswers.length === 0) {
+      message.warning('请选择答案');
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      await fetch(`${BASE_URL}/play/${playerId}/answer`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ answers: selectedAnswers })
+      });
+      message.success('答案已提交');
+    } catch (error) {
+      message.error('提交答案失败');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  // 处理答案选择
+  const handleAnswerSelect = (value) => {
+    const { question } = gameState;
+    if (!question) return;
+
+    if (question.type === 'single') {
+      setSelectedAnswers([value]);
+    } else if (question.type === 'multiple') {
+      const newAnswers = selectedAnswers.includes(value)
+        ? selectedAnswers.filter(a => a !== value)
+        : [...selectedAnswers, value];
+      setSelectedAnswers(newAnswers);
+    } else if (question.type === 'judgement') {
+      setSelectedAnswers([value]);
+    }
+  };
+
+  // 渲染媒体内容
+  const renderMedia = () => {
+    const { question } = gameState;
+    if (!question) return null;
+
+    if (question.image) {
+      return (
+        <div style={styles.mediaContainer}>
+          <Image
+            src={question.image}
+            alt="问题图片"
+            style={styles.image}
+          />
+        </div>
+      );
+    }
+
+    if (question.video) {
+      return (
+        <div style={styles.mediaContainer}>
+          <iframe
+            src={question.video}
+            title="问题视频"
+            style={styles.iframe}
+            allowFullScreen
+          />
+        </div>
+      );
+    }
+
+    return null;
+  };
