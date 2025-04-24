@@ -1,3 +1,3 @@
-export function ifLogin(){
-    return !!localStorage.getItem('token');
+export function ifLogin() {
+  return !!localStorage.getItem("token");
 }
