@@ -1,64 +1,106 @@
-import { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
-import { Form, Input, Button, message, Card } from "antd";
-import requests from "../../utills/requests";
+import { useState } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { Form, Input, Button, Card, message } from 'antd';
+import config from '../../../backend.config.json';
+
+const BASE_URL = `http://localhost:${config.BACKEND_PORT}`;
 
 export default function Join() {
   const { sessionId: paramSessionId } = useParams();
   const navigate = useNavigate();
   const [form] = Form.useForm();
-  const [sessionId, setSessionId] = useState(paramSessionId || "");
+  const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    form.setFieldsValue({ sessionId, name: "" });
-  }, [sessionId]);
-
-  const handleSubmit = async (values) => {
-    const sid = values.sessionId;
-    const name = values.name;
-    if (!sid || !name) {
+  // 处理表单提交
+  const handleJoin = async (values) => {
+    const { sessionId, name } = values;
+    if (!sessionId || !name) {
       message.error("Session ID and name are required");
       return;
     }
+
+    setLoading(true);
     try {
-      const res = await requests.post(`/play/join/${sid}`, { name });
-      const playerId = res.playerId;
-      navigate(`/play/${playerId}`);
-    } catch (err) {
-      message.error(`Join failed: ${err.message}`);
+      const response = await fetch(`${BASE_URL}/play/join/${sessionId}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ name })
+      });
+
+      const data = await response.json();
+      if (data.error) {
+        throw new Error(data.error);
+      }
+
+      // 成功加入后导航到游戏页面
+      navigate(`/play/${data.playerId}`);
+    } catch (error) {
+      message.error(error.message || "Failed to join game");
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <Card
-      title="Join a Game Session"
-      style={{ maxWidth: 400, margin: "50px auto" }}
-    >
-      <Form form={form} onFinish={handleSubmit} layout="vertical">
-        <Form.Item
-          name="sessionId"
-          label="Session ID"
-          rules={[{ required: true, message: "Please enter session ID" }]}
+    <div style={{ 
+      display: 'flex', 
+      justifyContent: 'center', 
+      alignItems: 'center', 
+      minHeight: '100vh',
+      background: '#f0f2f5'
+    }}>
+      <Card 
+        title="Join Game Session" 
+        style={{ 
+          width: '100%',
+          maxWidth: 400,
+          boxShadow: '0 4px 8px rgba(0,0,0,0.1)'
+        }}
+      >
+        <Form
+          form={form}
+          layout="vertical"
+          initialValues={{ sessionId: paramSessionId }}
+          onFinish={handleJoin}
         >
-          <Input
-            placeholder="Enter session ID"
-            value={sessionId}
-            onChange={(e) => setSessionId(e.target.value)}
-          />
-        </Form.Item>
-        <Form.Item
-          name="name"
-          label="Your Name"
-          rules={[{ required: true, message: "Please enter your name" }]}
-        >
-          <Input placeholder="Enter your name" />
-        </Form.Item>
-        <Form.Item>
-          <Button type="primary" htmlType="submit" block>
-            Join
-          </Button>
-        </Form.Item>
-      </Form>
-    </Card>
+          <Form.Item
+            name="sessionId"
+            label="Session ID"
+            rules={[{ required: true, message: "Please enter session ID" }]}
+          >
+            <Input 
+              placeholder="Enter session ID"
+              disabled={!!paramSessionId}
+              size="large"
+            />
+          </Form.Item>
+
+          <Form.Item
+            name="name"
+            label="Your Name"
+            rules={[{ required: true, message: "Please enter your name" }]}
+          >
+            <Input 
+              placeholder="Enter your name"
+              size="large"
+            />
+          </Form.Item>
+
+          <Form.Item>
+            <Button 
+              type="primary" 
+              htmlType="submit" 
+              loading={loading}
+              block
+              size="large"
+            >
+              Join Game
+            </Button>
+          </Form.Item>
+        </Form>
+      </Card>
+    </div>
   );
 }
