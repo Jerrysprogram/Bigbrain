@@ -53,6 +53,17 @@ export default function Play() {
     return () => clearInterval(interval);
   }, [playerId, question, correctAnswers]);
 
+  // 倒计时 effect，基于当前问题状态更新 timer
+  useEffect(() => {
+    let intervalId;
+    if (status && status.started && question && correctAnswers === null) {
+      intervalId = setInterval(() => {
+        setTimer(prev => (prev > 0 ? prev - 1 : 0));
+      }, 1000);
+    }
+    return () => clearInterval(intervalId);
+  }, [status, question, correctAnswers]);
+
   const submitAnswers = async (vals) => {
     try {
       await requests.put(`/play/${playerId}/answer`, { answers: vals });
@@ -105,25 +116,24 @@ export default function Play() {
 
   // question ongoing
   if (status.started && question && correctAnswers === null) {
-    // countdown
-    useEffect(() => {
-      const t = setInterval(() => setTimer(t => (t > 0 ? t - 1 : 0)), 1000);
-      return () => clearInterval(t);
-    }, []);
     const type = question.type;
     let inputComponent;
     if (type === 'single' || type === 'judgement') {
-      const options = type === 'judgement' ? ['True', 'False'] : question.answers.map((_, i) => i);
+      const options = type === 'judgement' ? ['True', 'False'] : question.answers;
       inputComponent = (
         <Radio.Group onChange={e => submitAnswers([e.target.value])} value={answers[0]}>
-          {options.map(opt => (
-            <Radio key={opt} value={opt}>{opt.toString()}</Radio>
+          {options.map((opt, idx) => (
+            <Radio key={idx} value={opt}>{opt}</Radio>
           ))}
         </Radio.Group>
       );
     } else {
       inputComponent = (
-        <Checkbox.Group options={question.answers.map((_,i)=>({ label: i, value:i }))} value={answers} onChange={submitAnswers} />
+        <Checkbox.Group
+          options={question.answers.map(ans => ({ label: ans, value: ans }))}
+          value={answers}
+          onChange={submitAnswers}
+        />
       );
     }
     return (
