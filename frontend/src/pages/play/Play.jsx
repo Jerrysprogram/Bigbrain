@@ -138,9 +138,9 @@ export default function Play() {
       }
     };
 
-    // 减少轮询频率
+    // 增加轮询间隔到5秒
     pollGameStatus();
-    pollTimerRef.current = setInterval(pollGameStatus, 2000);
+    pollTimerRef.current = setInterval(pollGameStatus, 5000);
 
     return () => {
       if (pollTimerRef.current) {
@@ -195,7 +195,7 @@ export default function Play() {
     }
   };
 
-  // 倒计时
+  // 倒计时优化
   const startCountdown = (duration) => {
     if (timerRef.current) {
       clearInterval(timerRef.current);
@@ -224,8 +224,8 @@ export default function Play() {
       }
     };
 
-    // 减少更新频率
-    timerRef.current = setInterval(updateTimer, 1000);
+    // 增加倒计时更新间隔到2秒
+    timerRef.current = setInterval(updateTimer, 2000);
     updateTimer(); // 立即执行一次
   };
 
@@ -241,23 +241,18 @@ export default function Play() {
           correctAnswers: data.answers
         }));
       } else {
-        // 如果还没有答案，继续轮询
-        setTimeout(fetchAnswers, 1000);
+        // 增加轮询间隔到3秒
+        setTimeout(fetchAnswers, 3000);
       }
     } catch (error) {
       console.error('Fetch answers error:', error);
-      // 如果获取答案失败，可能是因为答案还未公布，继续轮询
-      setTimeout(fetchAnswers, 1000);
+      // 增加轮询间隔到3秒
+      setTimeout(fetchAnswers, 3000);
     }
   };
 
   // 提交答案
   const submitAnswer = async () => {
-    if (selectedAnswers.length === 0) {
-      message.warning('请选择答案');
-      return;
-    }
-
     if (submitting || hasSubmitted) {
       return;
     }
