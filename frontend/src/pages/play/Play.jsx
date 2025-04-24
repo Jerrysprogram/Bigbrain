@@ -159,32 +159,26 @@ export default function Play() {
         const timeStarted = new Date(data.question.isoTimeLastQuestionStarted).getTime();
         const timeLeft = Math.max(0, Math.floor(data.question.duration - (Date.now() - timeStarted) / 1000));
         
-        // 处理问题数据结构
         const questionData = {
           ...data.question,
-          options: (data.question.answers || []).map((answer, index) => ({
-            id: index,
-            text: answer.text || answer,
-          }))
+          answers: data.question.answers || []
         };
         
         const isNewQuestion = questionData.id !== gameState.question?.id;
         
-        // 批量更新状态，减少重渲染
+        if (isNewQuestion) {
+          // 新问题时重置所有相关状态
+          setSelectedAnswers([]);
+          setHasSubmitted(false);
+          setSubmitting(false);
+        }
+
         setGameState(prev => ({
           ...prev,
           question: questionData,
           timeLeft,
-          ...(isNewQuestion ? {
-            lastSubmittedAnswers: [],
-            correctAnswers: null,
-            submitting: false
-          } : {})
+          correctAnswers: null
         }));
-
-        if (isNewQuestion) {
-          setSelectedAnswers([]);
-        }
 
         if (timeLeft > 0) {
           startCountdown(timeLeft);
@@ -246,6 +240,9 @@ export default function Play() {
           ...prev,
           correctAnswers: data.answers
         }));
+      } else {
+        // 如果还没有答案，继续轮询
+        setTimeout(fetchAnswers, 1000);
       }
     } catch (error) {
       console.error('Fetch answers error:', error);
@@ -261,14 +258,11 @@ export default function Play() {
       return;
     }
 
-    if (gameState.submitting) {
+    if (submitting || hasSubmitted) {
       return;
     }
 
-    setGameState(prev => ({
-      ...prev,
-      submitting: true
-    }));
+    setSubmitting(true);
 
     try {
       const response = await fetch(`${BASE_URL}/play/${playerId}/answer`, {
@@ -285,23 +279,13 @@ export default function Play() {
         throw new Error('提交答案失败');
       }
 
-      setGameState(prev => ({
-        ...prev,
-        lastSubmittedAnswers: selectedAnswers,
-        submitting: false
-      }));
-      
-      // 延迟显示成功消息，避免与其他状态更新冲突
-      setTimeout(() => {
-        message.success('答案已提交');
-      }, 100);
+      setHasSubmitted(true);
+      message.success('答案已提交');
     } catch (error) {
       console.error('Submit answer error:', error);
       message.error(error.message || '提交答案失败');
-      setGameState(prev => ({
-        ...prev,
-        submitting: false
-      }));
+    } finally {
+      setSubmitting(false);
     }
   };
 
