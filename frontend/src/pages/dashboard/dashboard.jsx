@@ -4,7 +4,6 @@ import { Link, useNavigate } from 'react-router-dom';
 import { UserOutlined, PlusOutlined, EditOutlined, DeleteOutlined, CopyOutlined } from '@ant-design/icons';
 import { ifLogin } from '../../utills/index';
 import requests from '../../utills/requests';
-import { getGameById } from '../../utills/api';
 
 export default function Dashboard() {
   const [modalVisible, setModalVisible] = useState(false);
