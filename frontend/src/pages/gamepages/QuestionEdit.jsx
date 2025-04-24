@@ -144,28 +144,38 @@ export default function QuestionEdit() {
           </Tabs>
         </Form.Item>
         {/* 答案选项 */}
-        <Form.List name="answers" initialValue={game.questions.find(q => q.id === +questionId).answers}>
+        <Form.List
+          name="answers"
+          initialValue={game.questions.find(q => q.id === +questionId).answers}
+        >
           {(fields, { add, remove }) => (
             <>
-              {fields.map((field, idx) => (
-                <Space key={field.key} align="start" style={{ display: 'flex', marginBottom: 8 }}>
+              {fields.map(field => (
+                <Space
+                  key={field.key}
+                  align="start"
+                  style={{ display: 'flex', marginBottom: 8 }}
+                >
                   <Form.Item
-                    {...field}
+                    key={`${field.key}-text`}
                     name={[field.name, 'text']}
                     fieldKey={[field.fieldKey, 'text']}
                     rules={[{ required: true, message: 'Please enter an answer' }]}
                   >
-                    <Input placeholder={`Answer ${idx + 1}`} />
+                    <Input placeholder="Answer text" />
                   </Form.Item>
                   <Form.Item
-                    {...field}
+                    key={`${field.key}-correct`}
                     name={[field.name, 'isCorrect']}
                     fieldKey={[field.fieldKey, 'isCorrect']}
                     valuePropName="checked"
                   >
                     <Checkbox>Correct Answer</Checkbox>
                   </Form.Item>
-                  <DeleteOutlined onClick={() => remove(field.name)} style={{ fontSize: 20, color: 'red' }} />
+                  <DeleteOutlined
+                    onClick={() => remove(field.name)}
+                    style={{ fontSize: 20, color: 'red' }}
+                  />
                 </Space>
               ))}
               <Form.Item>
