@@ -71,7 +71,6 @@ export default function Play() {
     return () => clearInterval(statusInterval);
   }, [playerId]);
 
-
   // 2. 倒计时
   useEffect(() => {
     if (!gameState.started || !gameState.question || gameState.timeLeft <= 0) return;
@@ -160,99 +159,94 @@ export default function Play() {
     );
   }
 
+  // 显示问题
+  if (gameState.question && !gameState.correctAnswers) {
+    const { question } = gameState;
+    const type = question.type || 'single';
 
-  if (loading) return <Spin tip="Loading..." />;
-
-  // not started
-  if (!started && !question) {
-    return (
-      <div className="lobby-screen">
-        <Title level={2}>Welcome to BigBrain Lobby</Title>
-        <Paragraph>Please wait until the host starts the game...</Paragraph>
-        {/* 你可以加个动画、Logo、倒计时等 */}
-      </div>
-    );
-  }
-
-  // final results
-  if (!started && results) {
-    // merge question results with scoring
-    const merged = results.map((ans, idx) => ({
-      key: idx,
-      question: idx + 1,
-      time: Math.round((new Date(ans.answeredAt) - new Date(ans.questionStartedAt)) / 1000),
-      correct: ans.correct ? 'Yes' : 'No',
-      points: ans.correct ? (question?.points || 0) : 0,
-    }));
-    const totalScore = merged.reduce((sum, row) => sum + row.points, 0);
-    const columns = [
-      { title: 'Question', dataIndex: 'question', key: 'question' },
-      { title: 'Time(s)', dataIndex: 'time', key: 'time' },
-      { title: 'Correct', dataIndex: 'correct', key: 'correct' },
-      { title: 'Points', dataIndex: 'points', key: 'points' },
-    ];
-    return (
-      <div style={{ padding: 24 }}>
-        <Title level={3}>Your Results</Title>
-        <Paragraph>Total Score: {totalScore}</Paragraph>
-        <Table dataSource={merged} columns={columns} pagination={false} />
-      </div>
-    );
-  }
-
-  // question ongoing
-  if (question && !correctAnswers) {
-    const type = question.type || 'single'; // 默认为单选
-    let inputComponent;
+    let answerComponent;
     if (type === 'single' || type === 'judgement') {
       const options = type === 'judgement'
         ? ['True', 'False']
-        : (question.answers || []).map(ans => ans.text || ans);
-      inputComponent = (
-        <Radio.Group onChange={e => submitAnswers([e.target.value])} value={answers[0]}>
+        : (question.answers || []).map(a => a.text || a);
+
+      answerComponent = (
+        <Radio.Group
+          onChange={e => submitAnswers(e.target.value)}
+          value={gameState.answers[0]}
+        >
           {options.map((opt, idx) => (
-            <Radio key={idx} value={opt}>{opt}</Radio>
+            <Radio key={idx} value={opt} style={{ display: 'block', marginBottom: 8 }}>
+              {opt}
+            </Radio>
           ))}
         </Radio.Group>
       );
     } else {
-      const options = (question.answers || []).map((ans, idx) => ({
-        label: ans.text || ans,
-        value: ans.text || ans
+      const options = (question.answers || []).map(a => ({
+        label: a.text || a,
+        value: a.text || a
       }));
-      inputComponent = (
+
+      answerComponent = (
         <Checkbox.Group
           options={options}
-          value={answers}
-          onChange={vals => submitAnswers(vals)}
+          value={gameState.answers}
+          onChange={submitAnswers}
         />
       );
     }
+
     return (
       <div style={{ padding: 24 }}>
-        <Title level={4}>Question: {question.text}</Title>
+        <Title level={4}>{question.text}</Title>
+        {question.media && (
+          <div style={{ marginBottom: 16 }}>
+            {question.media.type === 'image' ? (
+              <img src={question.media.url} alt="Question" style={{ maxWidth: '100%' }} />
+            ) : (
+              <iframe
+                width="100%"
+                height="315"
+                src={question.media.url}
+                title="Question Video"
+                frameBorder="0"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              />
+            )}
+          </div>
+        )}
         <div style={{ marginBottom: 16 }}>
-          <Progress 
-            percent={Math.round((timer / question.duration) * 100)} 
+          <Progress
+            percent={(gameState.timeLeft / question.duration) * 100}
+            format={() => `${Math.ceil(gameState.timeLeft)}s`}
             status="active"
-            format={percent => `${Math.ceil(timer)}s`}
           />
         </div>
-        {inputComponent}
+        {answerComponent}
       </div>
     );
   }
 
-  // answer feedback
-  if (question && correctAnswers) {
+  // 显示答案
+  if (gameState.question && gameState.correctAnswers) {
     return (
       <div style={{ padding: 24 }}>
-        <Title level={4}>Correct Answers: {correctAnswers.join(', ')}</Title>
-        <Paragraph>You answered: {answers.join(', ')}</Paragraph>
-        <Paragraph>{answers.sort().toString() === correctAnswers.sort().toString() ? 'You are correct!' : 'Wrong answer.'}</Paragraph>
+        <Title level={4}>Time's up!</Title>
+        <Paragraph>
+          Correct answer(s): {gameState.correctAnswers.join(', ')}
+        </Paragraph>
+        <Paragraph>
+          Your answer(s): {gameState.answers.join(', ')}
+        </Paragraph>
+        <Paragraph>
+          {gameState.answers.sort().toString() === gameState.correctAnswers.sort().toString()
+            ? '✅ Correct!'
+            : '❌ Wrong answer'}
+        </Paragraph>
       </div>
     );
   }
 
   return null;
-} 
+}
