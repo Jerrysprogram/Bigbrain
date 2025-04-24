@@ -75,6 +75,9 @@ export default function QuestionEdit() {
           text: a.text,
           isCorrect: a.isCorrect,
         })),
+        correctAnswers: vals.answers
+          .filter((a) => a.isCorrect)
+          .map((a) => a.text),
       };
       // Update question list
       const newQuestions = game.questions.map((q) =>
