@@ -121,10 +121,8 @@ export default function Dashboard() {
   // 开始游戏会话
   const handleStartSession = async (gameId) => {
     try {
-      // 启动会话并自动推进至第一题
+      // 启动会话
       const { data } = await requests.post(`/admin/game/${gameId}/mutate`, { mutationType: 'START' });
-      // 自动推进到第一题
-      await requests.post(`/admin/game/${gameId}/mutate`, { mutationType: 'ADVANCE' });
       const sessionId = data.sessionId;
       setNewSessionId(sessionId);
       setSessionModalVisible(true);
