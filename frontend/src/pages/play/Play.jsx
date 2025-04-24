@@ -241,19 +241,26 @@ export default function Play() {
 
     setSubmitting(true);
     try {
-      await fetch(`${BASE_URL}/play/${playerId}/answer`, {
+      console.log('Submitting answers:', selectedAnswers);
+
+      const response = await fetch(`${BASE_URL}/play/${playerId}/answer`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ answers: selectedAnswers })
       });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+      }
       
       setHasSubmitted(true);
       message.success('答案已提交');
     } catch (error) {
       console.error('Submit answer error:', error);
-      message.error('提交答案失败');
+      message.error(error.message || '提交答案失败');
     } finally {
       setSubmitting(false);
     }
