@@ -167,6 +167,96 @@ export default function Play() {
     );
   }
 
-  // ... 其他代码将在后续部分添加 ...
+  // 显示问题
+  if (gameState.question && !gameState.correctAnswers) {
+    const { question } = gameState;
+    const type = question.type || 'single';
+
+    let answerComponent;
+    if (type === 'single' || type === 'judgement') {
+      const options = type === 'judgement'
+        ? ['True', 'False']
+        : (question.answers || []).map(a => a.text || a);
+
+      answerComponent = (
+        <Radio.Group
+          onChange={e => handleSubmit(e.target.value)}
+          value={gameState.answers[0]}
+          disabled={gameState.timeLeft <= 0}
+        >
+          {options.map((opt, idx) => (
+            <Radio key={idx} value={opt} style={{ display: 'block', marginBottom: 8 }}>
+              {opt}
+            </Radio>
+          ))}
+        </Radio.Group>
+      );
+    } else {
+      const options = (question.answers || []).map(a => ({
+        label: a.text || a,
+        value: a.text || a
+      }));
+
+      answerComponent = (
+        <Checkbox.Group
+          options={options}
+          value={gameState.answers}
+          onChange={handleSubmit}
+          disabled={gameState.timeLeft <= 0}
+        />
+      );
+    }
+
+    return (
+      <div style={{ padding: 24 }}>
+        <Title level={4}>{question.text}</Title>
+        {question.media && (
+          <div style={{ marginBottom: 16 }}>
+            {question.media.type === 'image' ? (
+              <img src={question.media.url} alt="Question" style={{ maxWidth: '100%' }} />
+            ) : (
+              <iframe
+                width="100%"
+                height="315"
+                src={question.media.url}
+                title="Question Video"
+                frameBorder="0"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              />
+            )}
+          </div>
+        )}
+        <div style={{ marginBottom: 16 }}>
+          <Progress
+            percent={(gameState.timeLeft / question.duration) * 100}
+            format={() => `${Math.ceil(gameState.timeLeft)}s`}
+            status="active"
+          />
+        </div>
+        {answerComponent}
+      </div>
+    );
+  }
+
+  // 显示答案
+  if (gameState.question && gameState.correctAnswers) {
+    return (
+      <div style={{ padding: 24 }}>
+        <Title level={4}>Time's up!</Title>
+        <Paragraph>
+          Correct answer(s): {gameState.correctAnswers.join(', ')}
+        </Paragraph>
+        <Paragraph>
+          Your answer(s): {gameState.answers.join(', ')}
+        </Paragraph>
+        <Paragraph>
+          {gameState.answers.sort().toString() === gameState.correctAnswers.sort().toString()
+            ? '✅ Correct!'
+            : '❌ Wrong answer'}
+        </Paragraph>
+      </div>
+    );
+  }
+
   return <Spin tip="Loading..." />;
 }
