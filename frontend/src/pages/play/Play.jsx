@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
-import { Spin, Alert, Button, Radio, Checkbox, List, Table, Typography, Progress, message } from 'antd';
+import { Spin, Radio, Checkbox, Table, Typography, Progress, message } from 'antd';
 import requests from '../../utills/requests';
 
 const { Title, Paragraph } = Typography;
