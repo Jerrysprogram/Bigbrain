@@ -16,7 +16,7 @@ import config from '../../../backend.config.json';
 const { Title, Paragraph } = Typography;
 const BASE_URL = `http://localhost:${config.BACKEND_PORT}`;
 
-// 基础样式
+// basic styles
 const styles = {
   container: {
     minHeight: '100vh',
@@ -82,11 +82,11 @@ export default function Play() {
   const [submitting, setSubmitting] = useState(false);
   const [hasSubmitted, setHasSubmitted] = useState(false);
   
-  // 使用 useRef 来存储定时器
+  // use useRef to store timers
   const timerRef = useRef(null);
   const pollTimerRef = useRef(null);
 
-  // 清理所有定时器
+  // clear all timers
   const clearAllTimers = () => {
     if (timerRef.current) {
       clearInterval(timerRef.current);
@@ -98,21 +98,21 @@ export default function Play() {
     }
   };
 
-  // 组件卸载时清理
+  // clear all timers when component unmounts
   useEffect(() => {
     return () => clearAllTimers();
   }, []);
 
-  // 轮询游戏状态
+  // poll game status
   useEffect(() => {
     const pollGameStatus = async () => {
       try {
         const response = await fetch(`${BASE_URL}/play/${playerId}/status`);
         const data = await response.json();
         
-        // 只在状态真正改变时更新
+        // only update when the status really changes
         setGameState(prev => {
-          // 如果状态没有改变，返回之前的状态
+          // if the status hasn't changed, return the previous state
           if (prev.started === data.started) {
             return prev;
           }
@@ -124,7 +124,7 @@ export default function Play() {
           };
         });
 
-        // 只在游戏开始时获取问题
+        // only fetch question when the game starts
         if (data.started && !gameState.started) {
           await fetchCurrentQuestion();
         }
@@ -132,13 +132,13 @@ export default function Play() {
         console.error('Poll game status error:', error);
         setGameState(prev => ({
           ...prev,
-          error: '获取游戏状态失败',
+          error: 'Failed to get game status',
           loading: false
         }));
       }
     };
 
-    // 增加轮询间隔到5秒
+    // increase polling interval to 5 seconds
     pollGameStatus();
     pollTimerRef.current = setInterval(pollGameStatus, 5000);
 
@@ -149,7 +149,7 @@ export default function Play() {
     };
   }, [playerId]);
 
-  // 获取当前问题
+  // fetch current question
   const fetchCurrentQuestion = async () => {
     try {
       const response = await fetch(`${BASE_URL}/play/${playerId}/question`);
@@ -167,7 +167,6 @@ export default function Play() {
         const isNewQuestion = questionData.id !== gameState.question?.id;
         
         if (isNewQuestion) {
-          // 新问题时重置所有相关状态
           setSelectedAnswers([]);
           setHasSubmitted(false);
           setSubmitting(false);
@@ -190,12 +189,12 @@ export default function Play() {
       console.error('Fetch question error:', error);
       setGameState(prev => ({
         ...prev,
-        error: '获取问题失败'
+        error: 'Failed to fetch question'
       }));
     }
   };
 
-  // 倒计时优化
+  // countdown optimization
   const startCountdown = (duration) => {
     if (timerRef.current) {
       clearInterval(timerRef.current);
@@ -208,7 +207,7 @@ export default function Play() {
       const remaining = Math.max(0, Math.ceil((endTime - now) / 1000));
       
       setGameState(prev => {
-        // 如果时间没有变化，不更新状态
+        // if the time hasn't changed, don't update the state
         if (prev.timeLeft === remaining) {
           return prev;
         }
@@ -224,12 +223,12 @@ export default function Play() {
       }
     };
 
-    // 增加倒计时更新间隔到2秒
+    // increase countdown update interval to 2 seconds
     timerRef.current = setInterval(updateTimer, 2000);
-    updateTimer(); // 立即执行一次
+    updateTimer(); // execute once immediately
   };
 
-  // 获取答案
+  // fetch answers
   const fetchAnswers = async () => {
     try {
       const response = await fetch(`${BASE_URL}/play/${playerId}/answer`);
@@ -241,17 +240,15 @@ export default function Play() {
           correctAnswers: data.answers
         }));
       } else {
-        // 增加轮询间隔到3秒
         setTimeout(fetchAnswers, 3000);
       }
     } catch (error) {
       console.error('Fetch answers error:', error);
-      // 增加轮询间隔到3秒
       setTimeout(fetchAnswers, 3000);
     }
   };
 
-  // 提交答案
+  // submit answer
   const submitAnswer = async () => {
     if (submitting || hasSubmitted) {
       return;
@@ -271,20 +268,20 @@ export default function Play() {
       });
 
       if (!response.ok) {
-        throw new Error('提交答案失败');
+        throw new Error('Failed to submit answer');
       }
 
       setHasSubmitted(true);
-      message.success('答案已提交');
+      message.success('Answer submitted');
     } catch (error) {
       console.error('Submit answer error:', error);
-      message.error(error.message || '提交答案失败');
+      message.error(error.message || 'Failed to submit answer');
     } finally {
       setSubmitting(false);
     }
   };
 
-  // 渲染媒体内容
+  // render media content
   const renderMedia = () => {
     const { question } = gameState;
     if (!question) return null;
@@ -294,7 +291,7 @@ export default function Play() {
         <div style={styles.mediaContainer}>
           <Image
             src={question.image}
-            alt="问题图片"
+            alt="question image"
             style={styles.image}
           />
         </div>
@@ -306,7 +303,7 @@ export default function Play() {
         <div style={styles.mediaContainer}>
           <iframe
             src={question.video}
-            title="问题视频"
+            title="question video"
             style={styles.iframe}
             allowFullScreen
           />
@@ -317,7 +314,7 @@ export default function Play() {
     return null;
   };
 
-  // 渲染答案选项
+  // render answer options
   const renderAnswerOptions = () => {
     const { question, correctAnswers } = gameState;
     if (!question || !question.answers) return null;
@@ -368,7 +365,7 @@ export default function Play() {
   if (gameState.loading) {
     return (
       <div style={styles.container}>
-        <Spin size="large" tip="加载中..." />
+        <Spin size="large" tip="Loading..." />
       </div>
     );
   }
@@ -377,7 +374,7 @@ export default function Play() {
     return (
       <div style={styles.container}>
         <Card style={styles.card}>
-          <Title level={4} type="danger">错误</Title>
+          <Title level={4} type="danger">Error</Title>
           <Paragraph>{gameState.error}</Paragraph>
         </Card>
       </div>
@@ -388,9 +385,9 @@ export default function Play() {
     return (
       <div style={styles.container}>
         <Card style={styles.card}>
-          <Title level={3}>等待游戏开始</Title>
+          <Title level={3}>Waiting for game to start</Title>
           <Paragraph>
-            请等待管理员开始游戏，页面将自动更新...
+            Please wait for the admin to start the game, the page will update automatically...
           </Paragraph>
           <Spin />
         </Card>
@@ -406,7 +403,7 @@ export default function Play() {
             <div style={{ marginBottom: 16 }}>
               <Progress
                 percent={Math.round((gameState.timeLeft / gameState.question.duration) * 100)}
-                format={() => `${gameState.timeLeft}秒`}
+                format={() => `${gameState.timeLeft}s`}
                 status={gameState.timeLeft > 5 ? 'active' : 'exception'}
               />
             </div>
@@ -432,14 +429,14 @@ export default function Play() {
                     opacity: (selectedAnswers.length === 0 || submitting) ? 0.5 : 1
                   }}
                 >
-                  {submitting ? '提交中...' : '提交答案'}
+                  {submitting ? 'Submitting...' : 'Submit Answer'}
                 </button>
               </div>
             )}
 
             {gameState.correctAnswers && (
               <Card style={{ marginTop: 24, backgroundColor: '#f6ffed' }}>
-                <Title level={5}>正确答案:</Title>
+                <Title level={5}>Correct Answers:</Title>
                 <Paragraph>
                   {gameState.correctAnswers.join(', ')}
                 </Paragraph>
