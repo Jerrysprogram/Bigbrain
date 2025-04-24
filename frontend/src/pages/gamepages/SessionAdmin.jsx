@@ -138,7 +138,13 @@ export default function SessionAdmin() {
           <p>在线玩家数: {status.players.length}</p>
         </Card>
         <Space>
-          <Button type="primary" onClick={handleAdvance}>下一题</Button>
+          <Button
+            type="primary"
+            onClick={handleAdvance}
+            disabled={status.players.length === 0}
+          >
+            下一题
+          </Button>
           <Button danger onClick={handleStop}>结束会话</Button>
         </Space>
       </div>
