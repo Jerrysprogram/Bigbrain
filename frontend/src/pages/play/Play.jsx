@@ -110,16 +110,24 @@ export default function Play() {
         const response = await fetch(`${BASE_URL}/play/${playerId}/status`);
         const data = await response.json();
         
-        if (data.started) {
-          // 游戏已开始，获取当前问题
+        // 只在状态真正改变时更新
+        setGameState(prev => {
+          // 如果状态没有改变，返回之前的状态
+          if (prev.started === data.started) {
+            return prev;
+          }
+          
+          return {
+            ...prev,
+            started: data.started,
+            loading: false
+          };
+        });
+
+        // 只在游戏开始时获取问题
+        if (data.started && !gameState.started) {
           await fetchCurrentQuestion();
         }
-        
-        setGameState(prev => ({
-          ...prev,
-          started: data.started,
-          loading: false
-        }));
       } catch (error) {
         console.error('Poll game status error:', error);
         setGameState(prev => ({
@@ -130,14 +138,9 @@ export default function Play() {
       }
     };
 
-    // 清理之前的轮询定时器
-    if (pollTimerRef.current) {
-      clearInterval(pollTimerRef.current);
-    }
-
-    // 设置新的轮询定时器
+    // 减少轮询频率
     pollGameStatus();
-    pollTimerRef.current = setInterval(pollGameStatus, 1000);
+    pollTimerRef.current = setInterval(pollGameStatus, 2000);
 
     return () => {
       if (pollTimerRef.current) {
@@ -156,21 +159,36 @@ export default function Play() {
         const timeStarted = new Date(data.question.isoTimeLastQuestionStarted).getTime();
         const timeLeft = Math.max(0, Math.floor(data.question.duration - (Date.now() - timeStarted) / 1000));
         
+        // 处理问题数据结构
+        const questionData = {
+          ...data.question,
+          options: (data.question.answers || []).map((answer, index) => ({
+            id: index,
+            text: answer.text || answer,
+          }))
+        };
+        
+        const isNewQuestion = questionData.id !== gameState.question?.id;
+        
+        // 批量更新状态，减少重渲染
         setGameState(prev => ({
           ...prev,
-          question: data.question,
-          timeLeft: timeLeft
+          question: questionData,
+          timeLeft,
+          ...(isNewQuestion ? {
+            lastSubmittedAnswers: [],
+            correctAnswers: null,
+            submitting: false
+          } : {})
         }));
 
-        // 重置答案状态
-        setSelectedAnswers([]);
-        setHasSubmitted(false);
+        if (isNewQuestion) {
+          setSelectedAnswers([]);
+        }
 
-        // 启动倒计时
         if (timeLeft > 0) {
           startCountdown(timeLeft);
         } else {
-          // 时间到，获取正确答案
           await fetchAnswers();
         }
       }
@@ -185,27 +203,36 @@ export default function Play() {
 
   // 倒计时
   const startCountdown = (duration) => {
-    // 清理之前的定时器
     if (timerRef.current) {
       clearInterval(timerRef.current);
     }
 
-    const startTime = Date.now();
-    const endTime = startTime + duration * 1000;
+    const endTime = Date.now() + duration * 1000;
 
-    timerRef.current = setInterval(() => {
+    const updateTimer = () => {
       const now = Date.now();
       const remaining = Math.max(0, Math.ceil((endTime - now) / 1000));
       
       setGameState(prev => {
-        if (remaining <= 0) {
-          clearInterval(timerRef.current);
-          fetchAnswers();
-          return { ...prev, timeLeft: 0 };
+        // 如果时间没有变化，不更新状态
+        if (prev.timeLeft === remaining) {
+          return prev;
         }
-        return { ...prev, timeLeft: remaining };
+        return {
+          ...prev,
+          timeLeft: remaining
+        };
       });
-    }, 1000);
+
+      if (remaining === 0) {
+        clearInterval(timerRef.current);
+        fetchAnswers();
+      }
+    };
+
+    // 减少更新频率
+    timerRef.current = setInterval(updateTimer, 1000);
+    updateTimer(); // 立即执行一次
   };
 
   // 获取答案
@@ -234,35 +261,47 @@ export default function Play() {
       return;
     }
 
-    if (hasSubmitted) {
-      message.info('已经提交过答案了');
+    if (gameState.submitting) {
       return;
     }
 
-    setSubmitting(true);
-    try {
-      console.log('Submitting answers:', selectedAnswers);
+    setGameState(prev => ({
+      ...prev,
+      submitting: true
+    }));
 
+    try {
       const response = await fetch(`${BASE_URL}/play/${playerId}/answer`, {
         method: 'PUT',
         headers: {
-          'Content-Type': 'application/json',
+          'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ answers: selectedAnswers })
+        body: JSON.stringify({
+          answers: selectedAnswers
+        })
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+        throw new Error('提交答案失败');
       }
+
+      setGameState(prev => ({
+        ...prev,
+        lastSubmittedAnswers: selectedAnswers,
+        submitting: false
+      }));
       
-      setHasSubmitted(true);
-      message.success('答案已提交');
+      // 延迟显示成功消息，避免与其他状态更新冲突
+      setTimeout(() => {
+        message.success('答案已提交');
+      }, 100);
     } catch (error) {
       console.error('Submit answer error:', error);
       message.error(error.message || '提交答案失败');
-    } finally {
-      setSubmitting(false);
+      setGameState(prev => ({
+        ...prev,
+        submitting: false
+      }));
     }
   };
 
