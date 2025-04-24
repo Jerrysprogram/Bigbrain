@@ -1,7 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Button, message, Spin, Table, Space, Card } from 'antd';
+import { Button, message, Spin, Table, Space, Card, Typography } from 'antd';
+import {
+  ResponsiveContainer,
+  BarChart, Bar,
+  LineChart, Line,
+  XAxis, YAxis,
+  CartesianGrid, Tooltip, Legend
+} from 'recharts';
 import requests from '../../utills/requests';
+
+const { Title } = Typography;
 
 export default function SessionAdmin() {
   const { sessionId } = useParams();
@@ -159,6 +168,25 @@ export default function SessionAdmin() {
   });
   const top5 = scores.sort((a, b) => b.score - a.score).slice(0, 5);
 
+  // Chart data: correct rate and average time per question
+  const correctRateData = (status.questions || []).map((q, idx) => {
+    const total = results.length;
+    const correctCount = results.filter(p => p.answers[idx]?.correct).length;
+    const correctRate = total > 0 ? (correctCount / total * 100).toFixed(1) : 0;
+    return { question: `Q${idx+1}`, correctRate: Number(correctRate) };
+  });
+  const avgTimeData = (status.questions || []).map((q, idx) => {
+    const times = results.map(p => {
+      const ans = p.answers[idx];
+      if (ans?.questionStartedAt && ans?.answeredAt) {
+        return (new Date(ans.answeredAt).getTime() - new Date(ans.questionStartedAt).getTime())/1000;
+      }
+      return null;
+    }).filter(t => t != null);
+    const avgTime = times.length > 0 ? (times.reduce((a,b)=>a+b,0)/times.length).toFixed(1) : 0;
+    return { question: `Q${idx+1}`, avgTime: Number(avgTime) };
+  });
+
   const columns = [
     { title: 'Player', dataIndex: 'name', key: 'name' },
     { title: 'Score', dataIndex: 'score', key: 'score' },
@@ -166,7 +194,33 @@ export default function SessionAdmin() {
 
   return (
     <div style={{ padding: 24 }}>
-      <h2>Results for Session {sessionId}</h2>
+      <Title level={3}>Results for Session {sessionId}</Title>
+      {/* Correct Rate Bar Chart */}
+      <div style={{ width: '100%', height: 300, marginBottom: 24 }}>
+        <ResponsiveContainer>
+          <BarChart data={correctRateData} margin={{ top: 20, right: 30, left: 0, bottom: 5 }}>
+            <CartesianGrid strokeDasharray="3 3" />
+            <XAxis dataKey="question" />
+            <YAxis unit="%" />
+            <Tooltip />
+            <Legend />
+            <Bar dataKey="correctRate" name="Correct Rate" fill="#8884d8" />
+          </BarChart>
+        </ResponsiveContainer>
+      </div>
+      {/* Average Time Line Chart */}
+      <div style={{ width: '100%', height: 300, marginBottom: 24 }}>
+        <ResponsiveContainer>
+          <LineChart data={avgTimeData} margin={{ top: 20, right: 30, left: 0, bottom: 5 }}>
+            <CartesianGrid strokeDasharray="3 3" />
+            <XAxis dataKey="question" />
+            <YAxis unit="s" />
+            <Tooltip />
+            <Legend />
+            <Line type="monotone" dataKey="avgTime" name="Avg Response Time" stroke="#82ca9d" />
+          </LineChart>
+        </ResponsiveContainer>
+      </div>
       <Button type="primary" style={{ marginBottom: 16 }} onClick={() => navigate('/dashboard')}>
         Back to Dashboard
       </Button>
