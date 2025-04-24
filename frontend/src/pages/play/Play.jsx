@@ -119,15 +119,39 @@ export default function Play() {
       }
 
       setSubmitting(true);
+      // 确保答案是一个数组
       const answers = Array.isArray(values) ? values : [values];
-      await requests.put(`/play/${playerId}/answer`, { answers });
+      console.log('准备提交的答案:', answers);
+      console.log('当前玩家ID:', playerId);
+      
+      // 发送答案数组，包装在对象中
+      const response = await requests.put(`/play/${playerId}/answer`, { answers });
+      console.log('提交答案响应:', response);
+      
       setGameState(prev => ({
         ...prev,
         answers
       }));
       message.success('答案已提交');
     } catch (err) {
-      message.error('提交答案失败: ' + (err.message || '未知错误'));
+      console.error('提交答案错误详情:', {
+        error: err,
+        message: err.message,
+        stack: err.stack,
+        values: values,
+        playerId: playerId,
+        gameState: gameState
+      });
+      
+      if (err.message.includes('Player ID does not refer to valid player id')) {
+        message.error('玩家ID无效，请重新加入游戏');
+      } else if (err.message.includes('Session has not started yet')) {
+        message.error('游戏尚未开始');
+      } else if (err.message.includes('Can\'t answer question once answer is available')) {
+        message.error('答案已公布，无法提交');
+      } else {
+        message.error('提交答案失败: ' + (err.message || '未知错误'));
+      }
     } finally {
       setSubmitting(false);
     }
