@@ -28,11 +28,11 @@ export default function Play() {
         setGameState(prev => ({
           ...prev,
           started: res.started,
-          position: res.position || -1  // 更新position
+          position: res.position || -1  // update position
         }));
 
         // If game has started, fetch current question
-        if (res.started && res.position >= 0) {  // 修改判断条件
+        if (res.started && res.position >= 0) {  // modified condition
           try {
             const { question } = await requests.get(`/play/${playerId}/question`);
             if (question) {
@@ -43,7 +43,7 @@ export default function Play() {
               setGameState(prev => ({
                 ...prev,
                 question,
-                position: res.position,  // 确保position同步
+                position: res.position,  // ensure position is synchronized
                 timeLeft,
                 answers: [], // Clear answers for new question
                 correctAnswers: null, // Reset correctAnswers
@@ -54,7 +54,7 @@ export default function Play() {
             console.error('Error fetching question:', e);
           }
         } else {
-          setLoading(false);  // Ensure loading is false even if game hasn't started
+          setLoading(false);  // set loading to false even on error
         }
 
         // Check for game end
@@ -76,7 +76,7 @@ export default function Play() {
     };
 
     const statusInterval = setInterval(pollStatus, 1000);
-    pollStatus(); // 立即执行一次
+    pollStatus(); // execute immediately
     return () => clearInterval(statusInterval);
   }, [playerId, gameState.started]);  // Add gameState.started as dependency
 
@@ -113,29 +113,29 @@ export default function Play() {
     getAnswers();
   }, [gameState.timeLeft, gameState.started, gameState.question, gameState.correctAnswers]);
 
-  // 提交答案
+  // Submit answer
   const submitAnswers = async (values) => {
     try {
-      // 检查游戏状态
+      // Check game state
       if (gameState.position === -1) {
-        message.error('游戏尚未开始，请等待');
+        message.error('Game has not started yet, please wait');
         return;
       }
 
       if (gameState.timeLeft <= 0) {
-        message.error('时间已到，无法提交答案');
+        message.error('Time is up, cannot submit answer');
         return;
       }
       
       if (submitting) {
-        message.warning('正在提交答案，请稍候');
+        message.warning('Submitting answer, please wait');
         return;
       }
 
       setSubmitting(true);
-      // 确保答案是一个数组
+      // Ensure answer is an array
       const answers = Array.isArray(values) ? values : [values];
-      console.log('提交答案信息:', {
+      console.log('Answer submission info:', {
         answers,
         playerId,
         gameState: {
@@ -146,17 +146,17 @@ export default function Play() {
         }
       });
       
-      // 发送答案数组，包装在对象中
+      // Send answer array wrapped in an object
       const response = await requests.put(`/play/${playerId}/answer`, { answersFromRequest: answers });
-      console.log('提交答案响应:', response);
+      console.log('Answer submission response:', response);
       
       setGameState(prev => ({
         ...prev,
         answers
       }));
-      message.success('答案已提交');
+      message.success('Answer submitted successfully');
     } catch (err) {
-      console.error('提交答案错误详情:', {
+      console.error('Submit answer error details:', {
         error: err,
         message: err.message,
         stack: err.stack,
@@ -171,13 +171,13 @@ export default function Play() {
       });
       
       if (err.message.includes('Player ID does not refer to valid player id')) {
-        message.error('玩家ID无效，请重新加入游戏');
+        message.error('Invalid player ID, please rejoin the game');
       } else if (err.message.includes('Session has not started yet')) {
-        message.error('游戏尚未开始，请等待');
+        message.error('Game has not started yet, please wait');
       } else if (err.message.includes('Can\'t answer question once answer is available')) {
-        message.error('答案已公布，无法提交');
+        message.error('Answer is already available, cannot submit');
       } else {
-        message.error('提交答案失败: ' + (err.message || '未知错误'));
+        message.error('Submit answer failed: ' + (err.message || 'Unknown error'));
       }
     } finally {
       setSubmitting(false);
@@ -292,7 +292,7 @@ export default function Play() {
             status="active"
           />
         </div>
-        {submitting && <Spin tip="正在提交答案..." />}
+        {submitting && <Spin tip="Submitting answer..." />}
         {answerComponent}
       </div>
     );
