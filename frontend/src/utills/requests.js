@@ -10,7 +10,7 @@ const defaultOptions = {
   },
 };
 
-// 封装 fetch   不删${BASE_HOST}会报错
+// Encapsulate fetch; BASE_HOST must not be removed or errors will occur
 function get(url) {
   // Return Promise
   return (
@@ -18,29 +18,29 @@ function get(url) {
       ...defaultOptions,
       headers: {
         ...defaultOptions.headers,
-        // 从 localStorage 中获取 token
+        // Retrieve token from localStorage
         Authorization: `Bearer ${window.localStorage.getItem('token')}`,
       },
     })
-    // 解析 json
+    // Parse JSON
       .then(res => res.json())
-    // 返回解析过的数据
+    // Return parsed data
       .then(data => {
         if (data.error) {
           throw new Error(data.error);
         }
         return data;
       })
-    // 捕获到错误，显示错误消息并重新抛出，以便上层捕获
+    // Catch errors, display an error message, and rethrow for upper-level handlers
       .catch(err => { message.error(err.message); throw err; })
   );
 }  
 
 /**
-* 封装 post 函数
-* @param {*} url 
-* @param {*} data 传输的数据，对象
-* @returns 
+* Encapsulate POST function
+* @param {*} url
+* @param {*} data Data to be sent, an object
+* @returns
 */
 function post(url, data) {
   return (
@@ -49,29 +49,29 @@ function post(url, data) {
       method: 'POST',
       headers: {
         ...defaultOptions.headers,
-        // 从 localStorage 中获取 token
+        // Retrieve token from localStorage
         Authorization: `Bearer ${window.localStorage.getItem('token')}`,
       },
       body: JSON.stringify(data),
     })
-    // 解析 json
+    // Parse JSON
       .then(res => res.json())
-    // 返回解析过的数据
+    // Return parsed data
       .then(data => {
         if (data.error) {
           throw new Error(data.error);
         }
         return data;
       })
-    // 捕获到错误，显示错误消息并重新抛出，以便上层捕获
+    // Catch errors, display an error message, and rethrow for upper-level handlers
       .catch(err => { message.error(err.message); throw err; })
   );
 }
 
 /**
- * 封装 put 函数
+ * Encapsulate PUT function
  * @param {*} url
- * @param {*} data 传输的数据，对象
+ * @param {*} data Data to be sent, an object
  * @returns
  */
 function put (url, data) {
@@ -81,21 +81,21 @@ function put (url, data) {
       method: 'PUT',
       headers: {
         ...defaultOptions.headers,
-        // 从 localStorage 中获取 token
+        // Retrieve token from localStorage
         Authorization: `Bearer ${window.localStorage.getItem('token')}`,
       },
       body: JSON.stringify(data),
     })
-    // 解析 json
+    // Parse JSON
       .then(res => res.json())
-    // 返回解析过的数据
+    // Return parsed data
       .then(data => {
         if (data.error) {
           throw new Error(data.error);
         }
         return data;
       })
-    // 捕获到错误，显示错误消息并重新抛出，以便上层捕获
+    // Catch errors, display an error message, and rethrow for upper-level handlers
       .catch(err => { message.error(err.message); throw err; })
   );
 }
