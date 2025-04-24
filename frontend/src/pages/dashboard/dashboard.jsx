@@ -16,7 +16,7 @@ export default function Dashboard() {
   const [newSessionId, setNewSessionId] = useState(null);
 
   /**
-   * 打开创建/编辑弹窗
+   * Open create/edit modal
    */
   const showCreateGameModal = (game = null) => {
     setEditingGame(game);
@@ -30,14 +30,14 @@ export default function Dashboard() {
     setModalVisible(true);
   };
 
-  // 定义一个函数：从后端获取游戏列表
+  // Define a function: fetch game list from backend
   const fetchGames = () => {
     requests.get('/admin/games')
       .then(response => setGames(response.games))
       .catch(err => message.error(`Failed to load games: ${err.message}`));
   };
 
-  // 登录验证并初次加载游戏列表
+  // Verify login and load game list initially
   useEffect(() => {
     if (!ifLogin()) {
       message.warning('No active session detected. Redirecting to login page.', 0.5, () => navigate('/login'));
@@ -47,12 +47,12 @@ export default function Dashboard() {
   }, []);
 
   /**
-   * 弹窗确认：创建或更新游戏
+   * Modal confirmation: create or update game
    */
   const handleModalOk = async () => {
     try {
       const values = await form.validateFields();
-      // 构造游戏对象，新游戏需提供唯一id
+      // Construct game object; new games must have a unique id
       const base = editingGame || {};
       const updated = {
         id: base.id || Date.now(),
@@ -62,13 +62,13 @@ export default function Dashboard() {
         owner: base.owner || localStorage.getItem('email'),
         updatedAt: new Date().toISOString(),
       };
-      // 更新列表并PUT
+      // Update list and send PUT request
       const newList = editingGame
         ? games.map(g => (g.id === editingGame.id ? updated : g))
         : [...games, updated];
       await requests.put('/admin/games', { games: newList });
       message.success(editingGame ? 'Game updated successfully' : 'Game created successfully');
-      // 刷新并重置状态
+      // Refresh list and reset state
       fetchGames();
       form.resetFields();
       setFileList([]);
@@ -80,7 +80,7 @@ export default function Dashboard() {
   };
 
   /**
-   * 取消创建/编辑：关闭弹窗并重置状态
+   * Cancel create/edit: close modal and reset state
    */
   const handleCancel = () => {
     setModalVisible(false);
@@ -90,7 +90,7 @@ export default function Dashboard() {
   };
 
   /**
-   * 删除游戏：过滤并PUT更新列表
+   * Delete game: filter and update list via PUT
    */
   const handleDeleteGame = async (id) => {
     const newList = games.filter(g => g.id !== id);
@@ -103,7 +103,7 @@ export default function Dashboard() {
     }
   };
 
-  // 处理退出登录
+  // Handle logout
   const handleLogout = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('email');
@@ -111,17 +111,17 @@ export default function Dashboard() {
     navigate('/login');
   };
 
-  // 顶部右侧下拉菜单 items 配置（Antd v5 用法）
+  // Top right dropdown menu items configuration (Antd v5 usage)
   const userMenu = {
     items: [
       { key: 'logout', label: 'Logout', onClick: handleLogout },
     ],
   };
 
-  // 开始游戏会话
+  // Start game session
   const handleStartSession = async (gameId) => {
     try {
-      // 启动会话（不自动推进问题，保持在 Lobby 以便玩家加入）
+      // Start session (do not automatically progress questions, stay in Lobby for players to join)
       const { data } = await requests.post(`/admin/game/${gameId}/mutate`, { mutationType: 'START' });
       const sessionId = data.sessionId;
       setNewSessionId(sessionId);
@@ -132,7 +132,7 @@ export default function Dashboard() {
     }
   };
 
-  // 停止游戏会话（先确认后调用）
+  // Stop game session (first confirm before calling)
   const handleStopSession = (gameId, sessionId) => {
     Modal.confirm({
       title: 'Stop Session?',
@@ -154,19 +154,19 @@ export default function Dashboard() {
 
   return (
     <div style={{ padding: '24px', maxWidth: '1200px', margin: '0 auto' }}>
-      {/* 创建游戏按钮 */}
+      {/* Create game button */}
       <Button type="primary" onClick={() => showCreateGameModal(null)} style={{ marginBottom: 16 }}>
         Create Game
       </Button>
 
-      {/* 右上角头像 + 下拉菜单 */}
+      {/* Top right avatar + dropdown menu */}
       <div style={{ position: 'absolute', top: 24, right: 24 }}>
         <Dropdown menu={userMenu} trigger={['click']}>
           <Avatar icon={<UserOutlined />} style={{ cursor: 'pointer' }} />
         </Dropdown>
       </div>
 
-      {/* 动态渲染游戏列表或无游戏提示 */}
+      {/* Dynamic render game list or no game prompt */}
       {(!Array.isArray(games) || games.length === 0) ? (
         <div style={{ textAlign: 'center', marginTop: 20 }}>
           <p>No games available. Click &quot;Create Game&quot; to create a new game.</p>
@@ -201,7 +201,7 @@ export default function Dashboard() {
                   title={<Link to={`/games/${item.id}`}>{item.name}</Link>}
                   description={item.createdAt ? new Date(item.createdAt).toLocaleString() : 'No description available'}
                 />
-                {/* 编辑/删除操作 */}
+                {/* Edit/Delete operations */}
                 <div style={{ textAlign: 'right', paddingTop: 8 }}>
                   <Link to={`/game/${item.id}`}>
                     <EditOutlined style={{ cursor: 'pointer' }} />
@@ -229,10 +229,10 @@ export default function Dashboard() {
                     <div style={{ marginTop: 8, display: 'flex', alignItems: 'center' }}>
                       <strong>Session ID:</strong>&nbsp;{item.active}
                       <Button type="link" size="small" onClick={() => navigate(`/session/${item.active}`)}>
-                        管理游戏
+                        Manage Game
                       </Button>
                       <Button type="default" size="small" style={{ marginLeft: 8 }} onClick={() => handleStopSession(item.id, item.active)}>
-                        停止游戏
+                        Stop Game
                       </Button>
                     </div>
                   )}
@@ -243,7 +243,7 @@ export default function Dashboard() {
         />
       )}
 
-      {/* 创建游戏弹窗 */}
+      {/* Create game modal */}
       <Modal
         title="Create New Game"
         okText="Create"
@@ -290,9 +290,9 @@ export default function Dashboard() {
           <Button key="copy" icon={<CopyOutlined />} onClick={() => {
             const url = `${window.location.origin}/play/join/${newSessionId}`;
             navigator.clipboard.writeText(url);
-            message.success('链接已复制');
+            message.success('Link copied');
           }}>
-            复制链接
+            Copy Link
           </Button>
         ]}
       >
