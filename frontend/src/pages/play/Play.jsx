@@ -80,3 +80,80 @@ export default function Play() {
   });
   const [selectedAnswers, setSelectedAnswers] = useState([]);
   const [submitting, setSubmitting] = useState(false);
+
+  // 轮询游戏状态
+  useEffect(() => {
+    const pollGameStatus = async () => {
+      try {
+        const response = await fetch(`${BASE_URL}/play/${playerId}/status`);
+        const data = await response.json();
+        
+        if (data.started) {
+          // 游戏已开始，获取当前问题
+          await fetchCurrentQuestion();
+        }
+        
+        setGameState(prev => ({
+          ...prev,
+          started: data.started,
+          loading: false
+        }));
+      } catch (error) {
+        setGameState(prev => ({
+          ...prev,
+          error: '获取游戏状态失败',
+          loading: false
+        }));
+      }
+    };
+
+    const interval = setInterval(pollGameStatus, 1000);
+    return () => clearInterval(interval);
+  }, [playerId]);
+
+  // 获取当前问题
+  const fetchCurrentQuestion = async () => {
+    try {
+      const response = await fetch(`${BASE_URL}/play/${playerId}/question`);
+      const data = await response.json();
+      
+      if (data.question) {
+        const timeStarted = new Date(data.question.isoTimeLastQuestionStarted).getTime();
+        const timeLeft = Math.max(0, Math.floor(data.question.duration - (Date.now() - timeStarted) / 1000));
+        
+        setGameState(prev => ({
+          ...prev,
+          question: data.question,
+          timeLeft: timeLeft
+        }));
+
+        // 启动倒计时
+        if (timeLeft > 0) {
+          startCountdown(timeLeft);
+        } else {
+          // 时间到，获取正确答案
+          await fetchAnswers();
+        }
+      }
+    } catch (error) {
+      setGameState(prev => ({
+        ...prev,
+        error: '获取问题失败'
+      }));
+    }
+  };
+
+  // 倒计时
+  const startCountdown = (duration) => {
+    const timer = setInterval(() => {
+      setGameState(prev => {
+        const newTimeLeft = prev.timeLeft - 1;
+        if (newTimeLeft <= 0) {
+          clearInterval(timer);
+          fetchAnswers();
+          return { ...prev, timeLeft: 0 };
+        }
+        return { ...prev, timeLeft: newTimeLeft };
+      });
+    }, 1000);
+  };
