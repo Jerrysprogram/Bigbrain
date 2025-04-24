@@ -253,8 +253,6 @@ export default function Play() {
     const { question, correctAnswers } = gameState;
     if (!question || !question.answers) return null;
 
-    const Component = question.type === 'multiple' ? Checkbox : Radio;
-
     return (
       <div style={styles.optionsContainer}>
         {question.type === 'multiple' ? (
@@ -267,10 +265,10 @@ export default function Play() {
               {question.answers.map((answer, index) => (
                 <Checkbox
                   key={index}
-                  value={answer}
+                  value={answer.text}
                   style={styles.option}
                 >
-                  {answer}
+                  {answer.text}
                 </Checkbox>
               ))}
             </Space>
@@ -285,10 +283,10 @@ export default function Play() {
               {question.answers.map((answer, index) => (
                 <Radio
                   key={index}
-                  value={answer}
+                  value={answer.text}
                   style={styles.option}
                 >
-                  {answer}
+                  {answer.text}
                 </Radio>
               ))}
             </Space>
