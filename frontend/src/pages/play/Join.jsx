@@ -11,7 +11,7 @@ export default function Join() {
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
 
-  // 处理表单提交
+  // Handle form submission
   const handleJoin = async (values) => {
     const { sessionId, name } = values;
     if (!sessionId || !name) {
@@ -34,7 +34,7 @@ export default function Join() {
         throw new Error(data.error);
       }
 
-      // 成功加入后导航到游戏页面
+      // Navigate to game page after successful join
       navigate(`/play/${data.playerId}`);
     } catch (error) {
       message.error(error.message || "Failed to join game");
