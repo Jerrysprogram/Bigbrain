@@ -15,54 +15,54 @@ export default function Play() {
   const [results, setResults] = useState(null);
   const [timer, setTimer] = useState(0);
 
-  // 轮询状态 & 问题/答案
+  // 轮询状态、问题、答案及结果（原始逻辑）
   useEffect(() => {
     let interval;
-    async function poll() {
+    const poll = async () => {
       try {
         const res = await requests.get(`/play/${playerId}/status`);
         setStatus(res);
-        if (!res.started && question === null) {
+        // 未开始
+        if (!res.started && !question) {
           setLoading(false);
-          // waiting to start
-        } else if (res.started && question === null) {
-          // fetch question
+        }
+        // 开始且还未获取到问题
+        else if (res.started && !question) {
           const qres = await requests.get(`/play/${playerId}/question`);
           const q = qres.question;
           setQuestion(q);
           setAnswers([]);
           setCorrectAnswers(null);
-          // set timer
+          // 计算剩余时间
           const elapsed = (Date.now() - new Date(q.isoTimeLastQuestionStarted).getTime()) / 1000;
           setTimer(Math.max(q.duration - elapsed, 0));
-        } else if (res.answerAvailable && correctAnswers === null) {
-          // fetch correct answers
+        }
+        // 答题结束且还未获取正确答案
+        else if (res.answerAvailable && !correctAnswers) {
           const answerRes = await requests.get(`/play/${playerId}/answer`);
           setCorrectAnswers(answerRes.answers);
-        } else if (!res.started && question !== null && results === null) {
-          // final results
+        }
+        // 未开始且已完成一题，获取最终结果
+        else if (!res.started && question && !results) {
           const rres = await requests.get(`/play/${playerId}/results`);
           setResults(rres);
         }
       } catch (err) {
-        // ignore polling errors
+        // 忽略
       }
-    }
+    };
     interval = setInterval(poll, 1000);
     poll();
     return () => clearInterval(interval);
   }, [playerId, question, correctAnswers]);
 
-  // 倒计时 effect，基于当前问题状态更新 timer
+  // 倒计时 effect
   useEffect(() => {
-    let intervalId;
-    if (status && status.started && question && correctAnswers === null) {
-      intervalId = setInterval(() => {
-        setTimer(prev => (prev > 0 ? prev - 1 : 0));
-      }, 1000);
+    if (question && !correctAnswers) {
+      const id = setInterval(() => setTimer(t => (t > 0 ? t - 1 : 0)), 1000);
+      return () => clearInterval(id);
     }
-    return () => clearInterval(intervalId);
-  }, [status, question, correctAnswers]);
+  }, [question, correctAnswers]);
 
   const submitAnswers = async (vals) => {
     try {
@@ -119,7 +119,9 @@ export default function Play() {
     const type = question.type;
     let inputComponent;
     if (type === 'single' || type === 'judgement') {
-      const options = type === 'judgement' ? ['True', 'False'] : question.answers;
+      const options = type === 'judgement'
+        ? ['True', 'False']
+        : question.answers.map(ans => ans.text);
       inputComponent = (
         <Radio.Group onChange={e => submitAnswers([e.target.value])} value={answers[0]}>
           {options.map((opt, idx) => (
@@ -130,7 +132,7 @@ export default function Play() {
     } else {
       inputComponent = (
         <Checkbox.Group
-          options={question.answers.map(ans => ({ label: ans, value: ans }))}
+          options={question.answers.map((ans, idx) => ({ label: ans.text, value: ans.text }))}
           value={answers}
           onChange={submitAnswers}
         />
