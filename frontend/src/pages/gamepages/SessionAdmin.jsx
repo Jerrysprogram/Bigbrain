@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Button, message, Spin, Table, Space, Card, Typography } from 'antd';
+import { Button, message, Spin, Table, Space, Card, Typography, Row, Col } from 'antd';
 import {
   ResponsiveContainer,
   BarChart, Bar,
@@ -162,7 +162,8 @@ export default function SessionAdmin() {
 
   // 会话结束，展示结果
   // 计算分数
-  const scores = (results || []).map(player => {
+  const safeResults = Array.isArray(results) ? results : [];
+  const scores = safeResults.map(player => {
     const score = player.answers.reduce((sum, ans, idx) => sum + (ans.correct ? (status.questions[idx].points || 0) : 0), 0);
     return { name: player.name, score };
   });
@@ -170,13 +171,13 @@ export default function SessionAdmin() {
 
   // Chart data: correct rate and average time per question
   const correctRateData = (status.questions || []).map((q, idx) => {
-    const total = results.length;
-    const correctCount = results.filter(p => p.answers[idx]?.correct).length;
+    const total = safeResults.length;
+    const correctCount = safeResults.filter(p => p.answers[idx]?.correct).length;
     const correctRate = total > 0 ? (correctCount / total * 100).toFixed(1) : 0;
     return { question: `Q${idx+1}`, correctRate: Number(correctRate) };
   });
   const avgTimeData = (status.questions || []).map((q, idx) => {
-    const times = results.map(p => {
+    const times = safeResults.map(p => {
       const ans = p.answers[idx];
       if (ans?.questionStartedAt && ans?.answeredAt) {
         return (new Date(ans.answeredAt).getTime() - new Date(ans.questionStartedAt).getTime())/1000;
@@ -195,36 +196,43 @@ export default function SessionAdmin() {
   return (
     <div style={{ padding: 24 }}>
       <Title level={3}>Results for Session {sessionId}</Title>
-      {/* Correct Rate Bar Chart */}
-      <div style={{ width: '100%', height: 300, marginBottom: 24 }}>
-        <ResponsiveContainer>
-          <BarChart data={correctRateData} margin={{ top: 20, right: 30, left: 0, bottom: 5 }}>
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="question" />
-            <YAxis unit="%" />
-            <Tooltip />
-            <Legend />
-            <Bar dataKey="correctRate" name="Correct Rate" fill="#8884d8" />
-          </BarChart>
-        </ResponsiveContainer>
-      </div>
-      {/* Average Time Line Chart */}
-      <div style={{ width: '100%', height: 300, marginBottom: 24 }}>
-        <ResponsiveContainer>
-          <LineChart data={avgTimeData} margin={{ top: 20, right: 30, left: 0, bottom: 5 }}>
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="question" />
-            <YAxis unit="s" />
-            <Tooltip />
-            <Legend />
-            <Line type="monotone" dataKey="avgTime" name="Avg Response Time" stroke="#82ca9d" />
-          </LineChart>
-        </ResponsiveContainer>
-      </div>
       <Button type="primary" style={{ marginBottom: 16 }} onClick={() => navigate('/dashboard')}>
         Back to Dashboard
       </Button>
       <Table dataSource={top5} columns={columns} rowKey="name" pagination={false} />
+      {/* Charts below table */}
+      <Row gutter={[16, 16]} style={{ marginTop: 24 }}>
+        <Col xs={24} lg={12}>
+          <Card title="Correct Rate (%)">
+            <div style={{ width: '100%', height: 250 }}>
+              <ResponsiveContainer>
+                <BarChart data={correctRateData} margin={{ top: 10, right: 10, left: 0, bottom: 10 }}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="question" />
+                  <YAxis unit="%" />
+                  <Tooltip />
+                  <Bar dataKey="correctRate" name="Correct Rate" fill="#1890ff" />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </Card>
+        </Col>
+        <Col xs={24} lg={12}>
+          <Card title="Average Response Time (s)">
+            <div style={{ width: '100%', height: 250 }}>
+              <ResponsiveContainer>
+                <LineChart data={avgTimeData} margin={{ top: 10, right: 10, left: 0, bottom: 10 }}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="question" />
+                  <YAxis unit="s" />
+                  <Tooltip />
+                  <Line type="monotone" dataKey="avgTime" name="Avg Time" stroke="#52c41a" />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          </Card>
+        </Col>
+      </Row>
     </div>
   );
 }
