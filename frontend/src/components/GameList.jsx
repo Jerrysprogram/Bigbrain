@@ -1,7 +1,6 @@
-import React from 'react';
-import { List, Card, Avatar, Popconfirm } from 'antd';
-import { EditOutlined, DeleteOutlined, UserOutlined } from '@ant-design/icons';
-import { Link } from 'react-router-dom';
+import { List, Card, Avatar, Popconfirm } from "antd";
+import { EditOutlined, DeleteOutlined, UserOutlined } from "@ant-design/icons";
+import { Link } from "react-router-dom";
 
 /**
  * GameList component
@@ -26,12 +25,12 @@ export default function GameList({ games, onEdit, onDelete }) {
         <List.Item>
           <Card
             hoverable
-            style={{ width: 300, margin: '0 auto' }}
+            style={{ width: 300, margin: "0 auto" }}
             cover={
               <img
                 alt={game.name}
                 src={game.thumbnail}
-                style={{ height: 200, objectFit: 'cover' }}
+                style={{ height: 200, objectFit: "cover" }}
               />
             }
           >
@@ -44,7 +43,7 @@ export default function GameList({ games, onEdit, onDelete }) {
                   : game.description
               }
             />
-            <div style={{ textAlign: 'right', paddingTop: 8 }}>
+            <div style={{ textAlign: "right", paddingTop: 8 }}>
               <EditOutlined
                 style={{ marginRight: 12 }}
                 onClick={() => onEdit(game)}
@@ -55,7 +54,7 @@ export default function GameList({ games, onEdit, onDelete }) {
                 okText="Yes"
                 cancelText="No"
               >
-                <DeleteOutlined style={{ color: 'red' }} />
+                <DeleteOutlined style={{ color: "red" }} />
               </Popconfirm>
             </div>
           </Card>
