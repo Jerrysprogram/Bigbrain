@@ -15,42 +15,32 @@ export default function Play() {
   const [results, setResults] = useState(null);
   const [timer, setTimer] = useState(0);
 
-  // 轮询状态、问题、答案及结果（原始逻辑）
+  // 轮询状态 & 问题/答案
   useEffect(() => {
     let interval;
-    const poll = async () => {
+    async function poll() {
       try {
         const res = await requests.get(`/play/${playerId}/status`);
         setStatus(res);
-        // 未开始
-        if (!res.started && !question) {
+        if (!res.started && question === null) {
           setLoading(false);
-        }
-        // 开始且还未获取到问题
-        else if (res.started && !question) {
+        } else if (res.started && question === null) {
           const qres = await requests.get(`/play/${playerId}/question`);
           const q = qres.question;
           setQuestion(q);
           setAnswers([]);
           setCorrectAnswers(null);
-          // 计算剩余时间
           const elapsed = (Date.now() - new Date(q.isoTimeLastQuestionStarted).getTime()) / 1000;
           setTimer(Math.max(q.duration - elapsed, 0));
-        }
-        // 答题结束且还未获取正确答案
-        else if (res.answerAvailable && !correctAnswers) {
+        } else if (res.answerAvailable && correctAnswers === null) {
           const answerRes = await requests.get(`/play/${playerId}/answer`);
           setCorrectAnswers(answerRes.answers);
-        }
-        // 未开始且已完成一题，获取最终结果
-        else if (!res.started && question && !results) {
+        } else if (!res.started && question !== null && results === null) {
           const rres = await requests.get(`/play/${playerId}/results`);
           setResults(rres);
         }
-      } catch (err) {
-        // 忽略
-      }
-    };
+      } catch {}
+    }
     interval = setInterval(poll, 1000);
     poll();
     return () => clearInterval(interval);
@@ -58,11 +48,9 @@ export default function Play() {
 
   // 倒计时 effect
   useEffect(() => {
-    if (question && !correctAnswers) {
-      const id = setInterval(() => setTimer(t => (t > 0 ? t - 1 : 0)), 1000);
-      return () => clearInterval(id);
-    }
-  }, [question, correctAnswers]);
+    const id = setInterval(() => setTimer(t => (t > 0 ? t - 1 : 0)), 1000);
+    return () => clearInterval(id);
+  }, []);
 
   const submitAnswers = async (vals) => {
     try {
