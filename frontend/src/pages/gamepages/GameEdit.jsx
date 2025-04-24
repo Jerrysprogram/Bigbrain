@@ -27,7 +27,7 @@ export default function GameEdit() {
   const [formAdd] = Form.useForm();
   const [fileList, setFileList] = useState([]);
 
-  // 拉取当前游戏及题目
+  // Fetch current game and question list
   const fetchGame = async () => {
     try {
       const { games } = await requests.get("/admin/games");
@@ -44,7 +44,7 @@ export default function GameEdit() {
     fetchGame();
   }, [gameId]);
 
-  // 编辑游戏信息
+  // Edit game information
   const openInfo = () => {
     formInfo.setFieldsValue({
       name: game.name,
@@ -88,7 +88,7 @@ export default function GameEdit() {
     setFileList([]);
   };
 
-  // 删除题目
+  // Delete question
   const handleDelete = async (qid) => {
     const newQs = questions.filter((q) => q.id !== qid);
     try {
@@ -104,7 +104,7 @@ export default function GameEdit() {
     }
   };
 
-  // 添加题目
+  // Add question
   const openAdd = () => {
     formAdd.resetFields();
     setAddVisible(true);
