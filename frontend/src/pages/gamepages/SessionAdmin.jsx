@@ -32,6 +32,14 @@ export default function SessionAdmin() {
     try {
       const { results: s } = await requests.get(`/admin/session/${sessionId}/status`);
       setStatus(s);
+      // 初始化/更新倒计时
+      if (s.active) {
+        const elapsed = (Date.now() - new Date(s.isoTimeLastQuestionStarted).getTime()) / 1000;
+        const duration = s.questions[s.position]?.duration || 0;
+        setTimer(Math.max(duration - elapsed, 0));
+      } else {
+        setTimer(0);
+      }
       return s;
     } catch (err) {
       message.error(`Fetch status failed: ${err.message}`);
@@ -91,6 +99,17 @@ export default function SessionAdmin() {
     }
   };
 
+  // 倒计时 effect：当会话活跃时每秒递减 timer
+  useEffect(() => {
+    let timerId;
+    if (status && status.active) {
+      timerId = setInterval(() => {
+        setTimer(prev => (prev > 0 ? prev - 1 : 0));
+      }, 1000);
+    }
+    return () => clearInterval(timerId);
+  }, [status]);
+
   if (loading || !status) {
     return <Spin tip="Loading session..." />;
   }
@@ -119,19 +138,8 @@ export default function SessionAdmin() {
           <p>在线玩家数: {status.players.length}</p>
         </Card>
         <Space>
-          <Button
-            disabled={pos <= 0}
-            onClick={() => message.info('无法返回上一题')}
-          >上一题</Button>
-          <Button
-            disabled={pos >= total - 1}
-            type="primary"
-            onClick={handleAdvance}
-          >下一题</Button>
-          <Button
-            danger
-            onClick={handleStop}
-          >结束会话</Button>
+          <Button type="primary" onClick={handleAdvance}>下一题</Button>
+          <Button danger onClick={handleStop}>结束会话</Button>
         </Space>
       </div>
     );
