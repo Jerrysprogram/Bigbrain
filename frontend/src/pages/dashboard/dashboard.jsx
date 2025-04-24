@@ -121,7 +121,7 @@ export default function Dashboard() {
   // 开始游戏会话
   const handleStartSession = async (gameId) => {
     try {
-      // 启动会话
+      // 启动会话（不自动推进问题，保持在 Lobby 以便玩家加入）
       const { data } = await requests.post(`/admin/game/${gameId}/mutate`, { mutationType: 'START' });
       const sessionId = data.sessionId;
       setNewSessionId(sessionId);
