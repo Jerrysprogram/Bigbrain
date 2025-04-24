@@ -24,23 +24,26 @@ export default function Play() {
     const pollStatus = async () => {
       try {
         const res = await requests.get(`/play/${playerId}/status`);
+        console.log('游戏状态:', res);
         setGameState(prev => ({
           ...prev,
-          started: res.started
+          started: res.started,
+          position: res.position || -1  // 更新position
         }));
 
         // 如果游戏已经开始，获取当前问题
-        if (res.started) {
+        if (res.started && res.position >= 0) {  // 修改判断条件
           try {
             const { question } = await requests.get(`/play/${playerId}/question`);
             if (question) {
               // 计算剩余时间
-              const elapsed = (Date.now() - new Date(question.isoTimeLastQuestionStarted).getTime()) / 1000;
+              const elapsed = (Date.now() - new Date(res.isoTimeLastQuestionStarted).getTime()) / 1000;
               const timeLeft = Math.max(question.duration - elapsed, 0);
               
               setGameState(prev => ({
                 ...prev,
                 question,
+                position: res.position,  // 确保position同步
                 timeLeft,
                 answers: [], // 新题目清空答案
                 correctAnswers: null // 清空正确答案
@@ -50,8 +53,12 @@ export default function Play() {
           } catch (e) {
             console.error('Error fetching question:', e);
           }
-        } else if (!res.started && gameState.started) {
-          // 游戏结束，获取结果
+        } else {
+          setLoading(false);  // 即使游戏未开始也要设置loading为false
+        }
+
+        // 游戏结束检查
+        if (!res.started && gameState.started) {
           try {
             const results = await requests.get(`/play/${playerId}/results`);
             setGameState(prev => ({
@@ -64,13 +71,14 @@ export default function Play() {
         }
       } catch (e) {
         console.error('Error polling status:', e);
+        setLoading(false);  // 出错时也要设置loading为false
       }
     };
 
     const statusInterval = setInterval(pollStatus, 1000);
     pollStatus(); // 立即执行一次
     return () => clearInterval(statusInterval);
-  }, [playerId]);
+  }, [playerId, gameState.started]);  // 添加gameState.started作为依赖
 
   // 2. 倒计时
   useEffect(() => {
@@ -181,11 +189,12 @@ export default function Play() {
   }
 
   // 等待游戏开始
-  if (!gameState.started && !gameState.results) {
+  if (!gameState.started || gameState.position === -1) {  // 修改判断条件
     return (
       <div style={{ padding: 24, textAlign: 'center' }}>
         <Title level={2}>Welcome to BigBrain</Title>
         <Paragraph>Please wait for the game to start...</Paragraph>
+        <Paragraph>Game Status: {gameState.started ? 'Started but waiting for first question' : 'Not started'}</Paragraph>
       </div>
     );
   }
