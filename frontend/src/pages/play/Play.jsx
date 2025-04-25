@@ -106,7 +106,7 @@ export default function Play() {
     return () => clearAllTimers();
   }, []);
 
-  // 优化倒计时逻辑
+  // start countdown
   const startCountdown = (duration) => {
     if (timerRef.current) {
       clearInterval(timerRef.current);
@@ -119,7 +119,7 @@ export default function Play() {
       const remaining = Math.max(0, Math.ceil((endTime - now) / 1000));
       
       setGameState(prev => {
-        // 如果时间没有变化，不更新状态
+        // if time left is not changed, do not update state
         if (prev.timeLeft === remaining) {
           return prev;
         }
@@ -135,9 +135,9 @@ export default function Play() {
       }
     };
 
-    // 每秒更新一次倒计时
+    // update countdown every second
     timerRef.current = setInterval(updateTimer, 1000);
-    updateTimer(); // 立即执行一次
+    updateTimer(); // execute once immediately
   };
 
   // poll game status
@@ -167,7 +167,7 @@ export default function Play() {
               const currentTime = Date.now();
               const timeLeft = Math.max(0, Math.floor(questionData.question.duration - (currentTime - timeStarted) / 1000));
               
-              // 只有在收到新问题时才重置答题状态
+              // only reset answer state when receiving a new question
               const isNewQuestion = questionData.question.id !== gameState.question?.id;
               if (isNewQuestion) {
                 setSelectedAnswers([]);
@@ -251,9 +251,9 @@ export default function Play() {
     }
   };
 
-  // 修改提交按钮的渲染逻辑
+  // modify submit button render logic
   const renderSubmitButton = () => {
-    // 如果已经提交过答案，显示已提交状态
+    // if answer has been submitted, show submitted status
     if (hasSubmitted) {
       return (
         <div style={{ marginTop: 24, textAlign: 'center' }}>
@@ -269,7 +269,7 @@ export default function Play() {
       );
     }
 
-    // 如果还没提交且时间未到，显示提交按钮
+    // if answer has not been submitted and time is not up, show submit button
     if (!hasSubmitted && gameState.timeLeft > 0) {
       return (
         <div style={{ marginTop: 24, textAlign: 'center' }}>
@@ -288,9 +288,9 @@ export default function Play() {
     return null;
   };
 
-  // 优化提交答案逻辑
+  // optimize submit answer logic
   const submitAnswer = async () => {
-    // 如果已经提交过或时间到了，直接返回
+    // if answer has been submitted or time is up, return
     if (submitting || hasSubmitted || gameState.timeLeft === 0) {
       return;
     }
@@ -355,7 +355,7 @@ export default function Play() {
     return null;
   };
 
-  // 修改选项渲染逻辑
+  // modify answer options render logic
   const renderAnswerOptions = () => {
     const { question, correctAnswers } = gameState;
     if (!question || !question.answers) return null;
@@ -432,7 +432,7 @@ export default function Play() {
     );
   }
 
-  // 游戏未开始
+  // game not started
   if (!gameState.started || gameState.position === -1) {
     return (
       <div style={styles.container}>
@@ -447,7 +447,7 @@ export default function Play() {
     );
   }
 
-  // 游戏进行中
+  // game in progress
   return (
     <div style={styles.container}>
       <Card style={styles.card}>
