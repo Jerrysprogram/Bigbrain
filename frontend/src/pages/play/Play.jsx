@@ -104,99 +104,7 @@ export default function Play() {
     return () => clearAllTimers();
   }, []);
 
-  // poll game status
-  useEffect(() => {
-    const pollGameStatus = async () => {
-      try {
-        // 获取游戏状态
-        const statusResponse = await fetch(`${BASE_URL}/play/${playerId}/status`);
-        const statusData = await statusResponse.json();
-        
-        console.log('Game status:', statusData); // 调试日志
-
-        setGameState(prev => ({
-          ...prev,
-          started: statusData.started,
-          loading: false
-        }));
-
-        // 如果游戏已开始，尝试获取当前问题
-        if (statusData.started) {
-          try {
-            const questionResponse = await fetch(`${BASE_URL}/play/${playerId}/question`);
-            const questionData = await questionResponse.json();
-            
-            console.log('Question data:', questionData); // 调试日志
-
-            if (questionData.question) {
-              const timeStarted = new Date(questionData.question.isoTimeLastQuestionStarted).getTime();
-              const timeLeft = Math.max(0, Math.floor(questionData.question.duration - (Date.now() - timeStarted) / 1000));
-              
-              // 重置答题状态
-              if (questionData.question.id !== gameState.question?.id) {
-                setSelectedAnswers([]);
-                setHasSubmitted(false);
-                setSubmitting(false);
-              }
-
-              setGameState(prev => ({
-                ...prev,
-                position: questionData.question.position || 0, // 修改这里，使用0作为默认值
-                question: {
-                  ...questionData.question,
-                  answers: questionData.question.answers || []
-                },
-                timeLeft,
-                correctAnswers: null
-              }));
-
-              if (timeLeft > 0) {
-                startCountdown(timeLeft);
-              } else {
-                await fetchAnswers();
-              }
-            }
-          } catch (error) {
-            console.error('Question fetch error:', error); // 调试日志
-            if (error.message === 'Session has not started yet') {
-              // 如果是因为游戏还未开始而无法获取问题，则设置position为-1
-              setGameState(prev => ({
-                ...prev,
-                position: -1,
-                question: null
-              }));
-            } else {
-              setGameState(prev => ({
-                ...prev,
-                error: 'Failed to fetch question'
-              }));
-            }
-          }
-        }
-      } catch (error) {
-        console.error('Status poll error:', error); // 调试日志
-        setGameState(prev => ({
-          ...prev,
-          error: 'Failed to get game status',
-          loading: false
-        }));
-      }
-    };
-
-    // 初始轮询
-    pollGameStatus();
-    
-    // 设置更频繁的轮询间隔（2秒）以确保及时获取状态更新
-    pollTimerRef.current = setInterval(pollGameStatus, 2000);
-
-    return () => {
-      if (pollTimerRef.current) {
-        clearInterval(pollTimerRef.current);
-      }
-    };
-  }, [playerId]);
-
-  // countdown optimization
+  // 优化倒计时逻辑
   const startCountdown = (duration) => {
     if (timerRef.current) {
       clearInterval(timerRef.current);
@@ -209,7 +117,7 @@ export default function Play() {
       const remaining = Math.max(0, Math.ceil((endTime - now) / 1000));
       
       setGameState(prev => {
-        // if the time hasn't changed, don't update the state
+        // 如果时间没有变化，不更新状态
         if (prev.timeLeft === remaining) {
           return prev;
         }
@@ -225,10 +133,105 @@ export default function Play() {
       }
     };
 
-    // increase countdown update interval to 2 seconds
-    timerRef.current = setInterval(updateTimer, 2000);
-    updateTimer(); // execute once immediately
+    // 每秒更新一次倒计时
+    timerRef.current = setInterval(updateTimer, 1000);
+    updateTimer(); // 立即执行一次
   };
+
+  // poll game status
+  useEffect(() => {
+    const pollGameStatus = async () => {
+      try {
+        const statusResponse = await fetch(`${BASE_URL}/play/${playerId}/status`);
+        const statusData = await statusResponse.json();
+        
+        console.log('Game status:', statusData);
+
+        setGameState(prev => ({
+          ...prev,
+          started: statusData.started,
+          loading: false
+        }));
+
+        if (statusData.started) {
+          try {
+            const questionResponse = await fetch(`${BASE_URL}/play/${playerId}/question`);
+            const questionData = await questionResponse.json();
+            
+            console.log('Question data:', questionData);
+
+            if (questionData.question) {
+              const timeStarted = new Date(questionData.question.isoTimeLastQuestionStarted).getTime();
+              const currentTime = Date.now();
+              const timeLeft = Math.max(0, Math.floor(questionData.question.duration - (currentTime - timeStarted) / 1000));
+              
+              // 只有在收到新问题时才重置答题状态
+              const isNewQuestion = questionData.question.id !== gameState.question?.id;
+              if (isNewQuestion) {
+                setSelectedAnswers([]);
+                setHasSubmitted(false);
+                setSubmitting(false);
+              }
+
+              setGameState(prev => ({
+                ...prev,
+                position: questionData.question.position || 0,
+                question: {
+                  ...questionData.question,
+                  answers: questionData.question.answers || []
+                },
+                timeLeft,
+                correctAnswers: null
+              }));
+
+              // 只有在时间还没到且是新问题时才启动倒计时
+              if (timeLeft > 0 && isNewQuestion) {
+                startCountdown(timeLeft);
+              } else if (timeLeft === 0) {
+                await fetchAnswers();
+              }
+            }
+          } catch (error) {
+            console.error('Question fetch error:', error);
+            if (error.message === 'Session has not started yet') {
+              setGameState(prev => ({
+                ...prev,
+                position: -1,
+                question: null
+              }));
+            } else {
+              setGameState(prev => ({
+                ...prev,
+                error: 'Failed to fetch question'
+              }));
+            }
+          }
+        }
+      } catch (error) {
+        console.error('Status poll error:', error);
+        setGameState(prev => ({
+          ...prev,
+          error: 'Failed to get game status',
+          loading: false
+        }));
+      }
+    };
+
+    // 初始轮询
+    pollGameStatus();
+    
+    // 降低轮询频率到4秒，给玩家更多答题时间
+    pollTimerRef.current = setInterval(pollGameStatus, 4000);
+
+    return () => {
+      if (pollTimerRef.current) {
+        clearInterval(pollTimerRef.current);
+      }
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+      }
+    };
+  }, [playerId]);
 
   // fetch answers
   const fetchAnswers = async () => {
@@ -250,9 +253,9 @@ export default function Play() {
     }
   };
 
-  // submit answer
+  // 优化提交答案逻辑
   const submitAnswer = async () => {
-    if (submitting || hasSubmitted) {
+    if (submitting || hasSubmitted || gameState.timeLeft === 0) {
       return;
     }
 
@@ -274,10 +277,11 @@ export default function Play() {
       }
 
       setHasSubmitted(true);
-      message.success('Answer submitted');
+      message.success('Answer submitted successfully');
     } catch (error) {
       console.error('Submit answer error:', error);
       message.error(error.message || 'Failed to submit answer');
+      setHasSubmitted(false);
     } finally {
       setSubmitting(false);
     }
