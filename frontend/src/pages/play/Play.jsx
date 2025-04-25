@@ -9,9 +9,11 @@ import {
   message,
   Card,
   Space,
-  Image
+  Image,
+  Button
 } from 'antd';
 import config from '../../../backend.config.json';
+import { CheckCircleOutlined } from '@ant-design/icons';
 
 const { Title, Paragraph } = Typography;
 const BASE_URL = `http://localhost:${config.BACKEND_PORT}`;
@@ -184,7 +186,6 @@ export default function Play() {
                 correctAnswers: null
               }));
 
-              // 只有在时间还没到且是新问题时才启动倒计时
               if (timeLeft > 0 && isNewQuestion) {
                 startCountdown(timeLeft);
               } else if (timeLeft === 0) {
@@ -217,11 +218,8 @@ export default function Play() {
       }
     };
 
-    // 初始轮询
     pollGameStatus();
-    
-    // 降低轮询频率到4秒，给玩家更多答题时间
-    pollTimerRef.current = setInterval(pollGameStatus, 4000);
+    pollTimerRef.current = setInterval(pollGameStatus, 5000);
 
     return () => {
       if (pollTimerRef.current) {
@@ -253,8 +251,46 @@ export default function Play() {
     }
   };
 
+  // 修改提交按钮的渲染逻辑
+  const renderSubmitButton = () => {
+    // 如果已经提交过答案，显示已提交状态
+    if (hasSubmitted) {
+      return (
+        <div style={{ marginTop: 24, textAlign: 'center' }}>
+          <Button
+            type="default"
+            disabled
+            icon={<CheckCircleOutlined />}
+            style={{ backgroundColor: '#f6ffed', color: '#52c41a', border: '1px solid #b7eb8f' }}
+          >
+            Answer Submitted
+          </Button>
+        </div>
+      );
+    }
+
+    // 如果还没提交且时间未到，显示提交按钮
+    if (!hasSubmitted && gameState.timeLeft > 0) {
+      return (
+        <div style={{ marginTop: 24, textAlign: 'center' }}>
+          <Button
+            type="primary"
+            onClick={submitAnswer}
+            disabled={selectedAnswers.length === 0 || submitting}
+            loading={submitting}
+          >
+            {submitting ? 'Submitting...' : 'Submit Answer'}
+          </Button>
+        </div>
+      );
+    }
+
+    return null;
+  };
+
   // 优化提交答案逻辑
   const submitAnswer = async () => {
+    // 如果已经提交过或时间到了，直接返回
     if (submitting || hasSubmitted || gameState.timeLeft === 0) {
       return;
     }
@@ -281,7 +317,6 @@ export default function Play() {
     } catch (error) {
       console.error('Submit answer error:', error);
       message.error(error.message || 'Failed to submit answer');
-      setHasSubmitted(false);
     } finally {
       setSubmitting(false);
     }
@@ -320,10 +355,12 @@ export default function Play() {
     return null;
   };
 
-  // render answer options
+  // 修改选项渲染逻辑
   const renderAnswerOptions = () => {
     const { question, correctAnswers } = gameState;
     if (!question || !question.answers) return null;
+
+    const isDisabled = hasSubmitted || !!correctAnswers || submitting;
 
     return (
       <div style={styles.optionsContainer}>
@@ -331,14 +368,18 @@ export default function Play() {
           <Checkbox.Group
             value={selectedAnswers}
             onChange={setSelectedAnswers}
-            disabled={!!correctAnswers || submitting || hasSubmitted}
+            disabled={isDisabled}
           >
             <Space direction="vertical" style={{ width: '100%' }}>
               {question.answers.map((answer, index) => (
                 <Checkbox
                   key={index}
                   value={answer.text}
-                  style={styles.option}
+                  style={{
+                    ...styles.option,
+                    opacity: isDisabled ? 0.7 : 1,
+                    cursor: isDisabled ? 'not-allowed' : 'pointer'
+                  }}
                 >
                   {answer.text}
                 </Checkbox>
@@ -349,14 +390,18 @@ export default function Play() {
           <Radio.Group
             value={selectedAnswers[0]}
             onChange={(e) => setSelectedAnswers([e.target.value])}
-            disabled={!!correctAnswers || submitting || hasSubmitted}
+            disabled={isDisabled}
           >
             <Space direction="vertical" style={{ width: '100%' }}>
               {question.answers.map((answer, index) => (
                 <Radio
                   key={index}
                   value={answer.text}
-                  style={styles.option}
+                  style={{
+                    ...styles.option,
+                    opacity: isDisabled ? 0.7 : 1,
+                    cursor: isDisabled ? 'not-allowed' : 'pointer'
+                  }}
                 >
                   {answer.text}
                 </Radio>
@@ -420,27 +465,7 @@ export default function Play() {
             
             {renderMedia()}
             {renderAnswerOptions()}
-
-            {!gameState.correctAnswers && !hasSubmitted && gameState.timeLeft > 0 && (
-              <div style={{ marginTop: 24, textAlign: 'center' }}>
-                <button
-                  onClick={submitAnswer}
-                  disabled={selectedAnswers.length === 0 || submitting}
-                  style={{
-                    padding: '8px 24px',
-                    fontSize: 16,
-                    borderRadius: 4,
-                    backgroundColor: '#1890ff',
-                    color: 'white',
-                    border: 'none',
-                    cursor: 'pointer',
-                    opacity: (selectedAnswers.length === 0 || submitting) ? 0.5 : 1
-                  }}
-                >
-                  {submitting ? 'Submitting...' : 'Submit Answer'}
-                </button>
-              </div>
-            )}
+            {renderSubmitButton()}
 
             {gameState.correctAnswers && (
               <Card style={{ marginTop: 24, backgroundColor: '#f6ffed' }}>
