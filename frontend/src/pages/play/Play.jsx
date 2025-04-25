@@ -76,7 +76,8 @@ export default function Play() {
     results: null,
     timeLeft: 0,
     loading: true,
-    error: null
+    error: null,
+    players: []
   });
   const [selectedAnswers, setSelectedAnswers] = useState([]);
   const [submitting, setSubmitting] = useState(false);
@@ -107,29 +108,73 @@ export default function Play() {
   useEffect(() => {
     const pollGameStatus = async () => {
       try {
-        const response = await fetch(`${BASE_URL}/play/${playerId}/status`);
-        const data = await response.json();
+        // 获取游戏状态
+        const statusResponse = await fetch(`${BASE_URL}/play/${playerId}/status`);
+        const statusData = await statusResponse.json();
         
-        // only update when the status really changes
-        setGameState(prev => {
-          // if the status hasn't changed, return the previous state
-          if (prev.started === data.started) {
-            return prev;
-          }
-          
-          return {
-            ...prev,
-            started: data.started,
-            loading: false
-          };
-        });
+        console.log('Game status:', statusData); // 调试日志
 
-        // only fetch question when the game starts
-        if (data.started && !gameState.started) {
-          await fetchCurrentQuestion();
+        setGameState(prev => ({
+          ...prev,
+          started: statusData.started,
+          loading: false
+        }));
+
+        // 如果游戏已开始，尝试获取当前问题
+        if (statusData.started) {
+          try {
+            const questionResponse = await fetch(`${BASE_URL}/play/${playerId}/question`);
+            const questionData = await questionResponse.json();
+            
+            console.log('Question data:', questionData); // 调试日志
+
+            if (questionData.question) {
+              const timeStarted = new Date(questionData.question.isoTimeLastQuestionStarted).getTime();
+              const timeLeft = Math.max(0, Math.floor(questionData.question.duration - (Date.now() - timeStarted) / 1000));
+              
+              // 重置答题状态
+              if (questionData.question.id !== gameState.question?.id) {
+                setSelectedAnswers([]);
+                setHasSubmitted(false);
+                setSubmitting(false);
+              }
+
+              setGameState(prev => ({
+                ...prev,
+                position: questionData.question.position || 0, // 修改这里，使用0作为默认值
+                question: {
+                  ...questionData.question,
+                  answers: questionData.question.answers || []
+                },
+                timeLeft,
+                correctAnswers: null
+              }));
+
+              if (timeLeft > 0) {
+                startCountdown(timeLeft);
+              } else {
+                await fetchAnswers();
+              }
+            }
+          } catch (error) {
+            console.error('Question fetch error:', error); // 调试日志
+            if (error.message === 'Session has not started yet') {
+              // 如果是因为游戏还未开始而无法获取问题，则设置position为-1
+              setGameState(prev => ({
+                ...prev,
+                position: -1,
+                question: null
+              }));
+            } else {
+              setGameState(prev => ({
+                ...prev,
+                error: 'Failed to fetch question'
+              }));
+            }
+          }
         }
       } catch (error) {
-        console.error('Poll game status error:', error);
+        console.error('Status poll error:', error); // 调试日志
         setGameState(prev => ({
           ...prev,
           error: 'Failed to get game status',
@@ -138,9 +183,11 @@ export default function Play() {
       }
     };
 
-    // increase polling interval to 5 seconds
+    // 初始轮询
     pollGameStatus();
-    pollTimerRef.current = setInterval(pollGameStatus, 5000);
+    
+    // 设置更频繁的轮询间隔（2秒）以确保及时获取状态更新
+    pollTimerRef.current = setInterval(pollGameStatus, 2000);
 
     return () => {
       if (pollTimerRef.current) {
@@ -148,51 +195,6 @@ export default function Play() {
       }
     };
   }, [playerId]);
-
-  // fetch current question
-  const fetchCurrentQuestion = async () => {
-    try {
-      const response = await fetch(`${BASE_URL}/play/${playerId}/question`);
-      const data = await response.json();
-      
-      if (data.question) {
-        const timeStarted = new Date(data.question.isoTimeLastQuestionStarted).getTime();
-        const timeLeft = Math.max(0, Math.floor(data.question.duration - (Date.now() - timeStarted) / 1000));
-        
-        const questionData = {
-          ...data.question,
-          answers: data.question.answers || []
-        };
-        
-        const isNewQuestion = questionData.id !== gameState.question?.id;
-        
-        if (isNewQuestion) {
-          setSelectedAnswers([]);
-          setHasSubmitted(false);
-          setSubmitting(false);
-        }
-
-        setGameState(prev => ({
-          ...prev,
-          question: questionData,
-          timeLeft,
-          correctAnswers: null
-        }));
-
-        if (timeLeft > 0) {
-          startCountdown(timeLeft);
-        } else {
-          await fetchAnswers();
-        }
-      }
-    } catch (error) {
-      console.error('Fetch question error:', error);
-      setGameState(prev => ({
-        ...prev,
-        error: 'Failed to fetch question'
-      }));
-    }
-  };
 
   // countdown optimization
   const startCountdown = (duration) => {
@@ -381,13 +383,14 @@ export default function Play() {
     );
   }
 
-  if (!gameState.started) {
+  // 游戏未开始
+  if (!gameState.started || gameState.position === -1) {
     return (
       <div style={styles.container}>
         <Card style={styles.card}>
           <Title level={3}>Waiting for game to start</Title>
           <Paragraph>
-            Please wait for the admin to start the game, the page will update automatically...
+            Please wait for the admin to start the game...
           </Paragraph>
           <Spin />
         </Card>
@@ -395,6 +398,7 @@ export default function Play() {
     );
   }
 
+  // 游戏进行中
   return (
     <div style={styles.container}>
       <Card style={styles.card}>
