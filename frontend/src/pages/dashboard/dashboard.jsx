@@ -4,6 +4,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { UserOutlined, PlusOutlined, EditOutlined, DeleteOutlined, CopyOutlined } from '@ant-design/icons';
 import { ifLogin } from '../../utills/index';
 import requests from '../../utills/requests';
+import './dashboard.css';
 
 export default function Dashboard() {
   const [modalVisible, setModalVisible] = useState(false);
@@ -153,22 +154,22 @@ export default function Dashboard() {
   };
 
   return (
-    <div style={{ padding: '24px', maxWidth: '1200px', margin: '0 auto' }}>
+    <div className="dashboardContainer">
       {/* Create game button */}
       <Button type="primary" onClick={() => showCreateGameModal(null)} style={{ marginBottom: 16 }}>
         Create Game
       </Button>
 
       {/* Top right avatar + dropdown menu */}
-      <div style={{ position: 'absolute', top: 24, right: 24 }}>
+      <div className="avatarContainer">
         <Dropdown menu={userMenu} trigger={['click']}>
-          <Avatar icon={<UserOutlined />} style={{ cursor: 'pointer' }} />
+          <Avatar icon={<UserOutlined />} className="avatar" />
         </Dropdown>
       </div>
 
       {/* Dynamic render game list or no game prompt */}
       {(!Array.isArray(games) || games.length === 0) ? (
-        <div style={{ textAlign: 'center', marginTop: 20 }}>
+        <div className="noGames">
           <p>No games available. Click &quot;Create Game&quot; to create a new game.</p>
         </div>
       ) : (
@@ -187,12 +188,12 @@ export default function Dashboard() {
             <List.Item>
               <Card
                 hoverable
-                style={{ width: '300px', margin: '0 auto' }}
+                className="gameCard"
                 cover={
                   <img
                     alt={item.name}
                     src={item.thumbnail}
-                    style={{ height: '200px', objectFit: 'cover' }}
+                    className="gameImage"
                   />
                 }
               >
@@ -202,9 +203,9 @@ export default function Dashboard() {
                   description={item.createdAt ? new Date(item.createdAt).toLocaleString() : 'No description available'}
                 />
                 {/* Edit/Delete operations */}
-                <div style={{ textAlign: 'right', paddingTop: 8 }}>
+                <div className="gameOperations">
                   <Link to={`/game/${item.id}`}>
-                    <EditOutlined style={{ cursor: 'pointer' }} />
+                    <EditOutlined className="editIcon" />
                   </Link>
                   <Popconfirm
                     title="Are you sure to delete this game?"
@@ -212,21 +213,21 @@ export default function Dashboard() {
                     okText="Yes"
                     cancelText="No"
                   >
-                    <DeleteOutlined style={{ color: 'red', marginLeft: 12 }} />
+                    <DeleteOutlined className="deleteIcon" />
                   </Popconfirm>
                   {/* Start Session button */}
                   {item.active == null ? (
                     (Array.isArray(item.questions) && item.questions.length > 0) ? (
-                      <Button type="primary" size="small" style={{ marginTop: 8 }} onClick={() => handleStartSession(item.id)}>
+                      <Button type="primary" size="small" className="startSessionButton" onClick={() => handleStartSession(item.id)}>
                         Start Session
                       </Button>
                     ) : (
-                      <Button type="primary" size="small" style={{ marginTop: 8 }} disabled>
+                      <Button type="primary" size="small" className="startSessionButton" disabled>
                         Add Questions First
                       </Button>
                     )
                   ) : (
-                    <div style={{ marginTop: 8, display: 'flex', alignItems: 'center' }}>
+                    <div className="sessionInfo">
                       <strong>Session ID:</strong>&nbsp;{item.active}
                       <Button type="link" size="small" onClick={() => navigate(`/session/${item.active}`)}>
                         Manage Game

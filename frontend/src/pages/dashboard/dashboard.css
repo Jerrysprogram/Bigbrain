@@ -1,0 +1,54 @@
+.dashboardContainer {
+  padding: 24px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.avatarContainer {
+  position: absolute;
+  top: 24px;
+  right: 24px;
+}
+
+.avatar {
+  cursor: pointer;
+}
+
+.gameCard {
+  width: 300px;
+  margin: 0 auto;
+}
+
+.gameImage {
+  height: 200px;
+  object-fit: cover;
+}
+
+.gameOperations {
+  text-align: right;
+  padding-top: 8px;
+}
+
+.editIcon {
+  cursor: pointer;
+}
+
+.deleteIcon {
+  color: red;
+  margin-left: 12px;
+}
+
+.startSessionButton {
+  margin-top: 8px;
+}
+
+.sessionInfo {
+  margin-top: 8px;
+  display: flex;
+  align-items: center;
+}
+
+.noGames {
+  text-align: center;
+  margin-top: 20px;
+} 

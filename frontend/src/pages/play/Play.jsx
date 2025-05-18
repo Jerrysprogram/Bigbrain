@@ -14,6 +14,7 @@ import {
 } from 'antd';
 import config from '../../../backend.config.json';
 import { CheckCircleOutlined } from '@ant-design/icons';
+import './Play.css';
 
 const { Title, Paragraph } = Typography;
 const BASE_URL = `http://localhost:${config.BACKEND_PORT}`;
@@ -73,18 +74,25 @@ export default function Play() {
     started: false,
     position: -1,
     question: null,
-    answers: [],
     correctAnswers: null,
-    results: null,
     timeLeft: 0,
     loading: true,
     error: null,
-    players: []
+    questionActive: false,
+    questionId: null,
+    gameEnded: false
   });
-  const [selectedAnswers, setSelectedAnswers] = useState([]);
-  const [submitting, setSubmitting] = useState(false);
-  const [hasSubmitted, setHasSubmitted] = useState(false);
-  
+
+  // 新增：单独的状态来管理选项
+  const [answerState, setAnswerState] = useState({
+    selectedAnswers: [],
+    hasSubmitted: false,
+    submitting: false
+  });
+
+  // 修改：使用answerState替代原来的状态
+  const { selectedAnswers, hasSubmitted, submitting } = answerState;
+
   // use useRef to store timers
   const timerRef = useRef(null);
   const pollTimerRef = useRef(null);
@@ -131,7 +139,10 @@ export default function Play() {
 
       if (remaining === 0) {
         clearInterval(timerRef.current);
-        fetchAnswers();
+        setGameState(prev => ({
+          ...prev,
+          questionActive: false
+        }));
       }
     };
 
@@ -145,6 +156,11 @@ export default function Play() {
     const pollGameStatus = async () => {
       try {
         const statusResponse = await fetch(`${BASE_URL}/play/${playerId}/status`);
+        // 若 status 接口返回非 2xx，表示会话已结束
+        if (!statusResponse.ok) {
+          setGameState(prev => ({ ...prev, gameEnded: true }));
+          return;
+        }
         const statusData = await statusResponse.json();
         
         console.log('Game status:', statusData);
@@ -160,6 +176,12 @@ export default function Play() {
             const questionResponse = await fetch(`${BASE_URL}/play/${playerId}/question`);
             const questionData = await questionResponse.json();
             
+            // 检测后端返回错误：Question not found 表示游戏结束
+            if (!questionResponse.ok && questionData.error === 'Question not found') {
+              setGameState(prev => ({ ...prev, gameEnded: true }));
+              return;
+            }
+
             console.log('Question data:', questionData);
 
             if (questionData.question) {
@@ -167,30 +189,26 @@ export default function Play() {
               const currentTime = Date.now();
               const timeLeft = Math.max(0, Math.floor(questionData.question.duration - (currentTime - timeStarted) / 1000));
               
-              // only reset answer state when receiving a new question
-              const isNewQuestion = questionData.question.id !== gameState.question?.id;
-              if (isNewQuestion) {
-                setSelectedAnswers([]);
-                setHasSubmitted(false);
-                setSubmitting(false);
-              }
-
-              setGameState(prev => ({
-                ...prev,
-                position: questionData.question.position || 0,
-                question: {
-                  ...questionData.question,
-                  answers: questionData.question.answers || []
-                },
-                timeLeft,
-                correctAnswers: null
-              }));
-
-              if (timeLeft > 0 && isNewQuestion) {
-                startCountdown(timeLeft);
-              } else if (timeLeft === 0) {
-                await fetchAnswers();
-              }
+              setGameState(prev => {
+                const isNewQuestion = questionData.question.id !== prev.questionId;
+                if (isNewQuestion) {
+                  // 只有真正的新问题才重置 answerState
+                  setAnswerState({ selectedAnswers: [], hasSubmitted: false, submitting: false });
+                  if (timeLeft > 0) startCountdown(timeLeft);
+                  return {
+                    ...prev,
+                    questionActive: timeLeft > 0,
+                    questionId: questionData.question.id,
+                    position: questionData.question.position,
+                    question: { ...questionData.question, answers: questionData.question.answers },
+                    timeLeft,
+                    correctAnswers: null
+                  };
+                } else {
+                  // 不是新问题就只更新时间，不动 answerState
+                  return { ...prev, timeLeft };
+                }
+              });
             }
           } catch (error) {
             console.error('Question fetch error:', error);
@@ -198,7 +216,9 @@ export default function Play() {
               setGameState(prev => ({
                 ...prev,
                 position: -1,
-                question: null
+                question: null,
+                questionActive: false,
+                questionId: null
               }));
             } else {
               setGameState(prev => ({
@@ -231,37 +251,29 @@ export default function Play() {
     };
   }, [playerId]);
 
-  // fetch answers
-  const fetchAnswers = async () => {
-    try {
-      const response = await fetch(`${BASE_URL}/play/${playerId}/answer`);
-      const data = await response.json();
-      
-      if (data.answers) {
-        setGameState(prev => ({
-          ...prev,
-          correctAnswers: data.answers
-        }));
-      } else {
-        setTimeout(fetchAnswers, 3000);
-      }
-    } catch (error) {
-      console.error('Fetch answers error:', error);
-      setTimeout(fetchAnswers, 3000);
-    }
-  };
+  // 游戏结束后展示页面
+  if (gameState.gameEnded) {
+    return (
+      <div className="container">
+        <Card className="card">
+          <Title level={3}>Game Ended</Title>
+          <Paragraph>The game has ended. Thank you for playing!</Paragraph>
+        </Card>
+      </div>
+    );
+  }
 
   // modify submit button render logic
   const renderSubmitButton = () => {
     // if answer has been submitted, show submitted status
     if (hasSubmitted) {
       return (
-        <div style={{ marginTop: 24, textAlign: 'center' }}>
+        <div className="submitButton">
           <Button
             type="default"
             disabled
             icon={<CheckCircleOutlined />}
-            style={{ backgroundColor: '#f6ffed', color: '#52c41a', border: '1px solid #b7eb8f' }}
+            className="submittedButton"
           >
             Answer Submitted
           </Button>
@@ -269,10 +281,10 @@ export default function Play() {
       );
     }
 
-    // if answer has not been submitted and time is not up, show submit button
-    if (!hasSubmitted && gameState.timeLeft > 0) {
+    // if answer has not been submitted and question is active, show submit button
+    if (!hasSubmitted && gameState.questionActive) {
       return (
-        <div style={{ marginTop: 24, textAlign: 'center' }}>
+        <div className="submitButton">
           <Button
             type="primary"
             onClick={submitAnswer}
@@ -290,12 +302,12 @@ export default function Play() {
 
   // optimize submit answer logic
   const submitAnswer = async () => {
-    // if answer has been submitted or time is up, return
-    if (submitting || hasSubmitted || gameState.timeLeft === 0) {
+    // if answer has been submitted or question is not active, return
+    if (submitting || hasSubmitted || !gameState.questionActive) {
       return;
     }
 
-    setSubmitting(true);
+    setAnswerState(prev => ({ ...prev, submitting: true }));
 
     try {
       const response = await fetch(`${BASE_URL}/play/${playerId}/answer`, {
@@ -312,13 +324,16 @@ export default function Play() {
         throw new Error('Failed to submit answer');
       }
 
-      setHasSubmitted(true);
+      setAnswerState(prev => ({
+        ...prev,
+        hasSubmitted: true,
+        submitting: false
+      }));
       message.success('Answer submitted successfully');
     } catch (error) {
       console.error('Submit answer error:', error);
       message.error(error.message || 'Failed to submit answer');
-    } finally {
-      setSubmitting(false);
+      setAnswerState(prev => ({ ...prev, submitting: false }));
     }
   };
 
@@ -360,26 +375,30 @@ export default function Play() {
     const { question, correctAnswers } = gameState;
     if (!question || !question.answers) return null;
 
-    const isDisabled = hasSubmitted || !!correctAnswers || submitting;
+    // 只有在已提交或显示正确答案时才禁用选项
+    const isDisabled = hasSubmitted || !!correctAnswers;
+
+    const handleAnswerChange = (values) => {
+      // 只有在未提交且未显示正确答案时才允许更改选项
+      if (!isDisabled) {
+        setAnswerState(prev => ({ ...prev, selectedAnswers: values }));
+      }
+    };
 
     return (
-      <div style={styles.optionsContainer}>
+      <div className="optionsContainer">
         {question.type === 'multiple' ? (
           <Checkbox.Group
             value={selectedAnswers}
-            onChange={setSelectedAnswers}
+            onChange={handleAnswerChange}
             disabled={isDisabled}
           >
-            <Space direction="vertical" style={{ width: '100%' }}>
+            <Space direction="vertical" className="answerSpace">
               {question.answers.map((answer, index) => (
                 <Checkbox
                   key={index}
                   value={answer.text}
-                  style={{
-                    ...styles.option,
-                    opacity: isDisabled ? 0.7 : 1,
-                    cursor: isDisabled ? 'not-allowed' : 'pointer'
-                  }}
+                  className={`option ${isDisabled ? 'disabled' : ''}`}
                 >
                   {answer.text}
                 </Checkbox>
@@ -389,19 +408,15 @@ export default function Play() {
         ) : (
           <Radio.Group
             value={selectedAnswers[0]}
-            onChange={(e) => setSelectedAnswers([e.target.value])}
+            onChange={(e) => handleAnswerChange([e.target.value])}
             disabled={isDisabled}
           >
-            <Space direction="vertical" style={{ width: '100%' }}>
+            <Space direction="vertical" className="answerSpace">
               {question.answers.map((answer, index) => (
                 <Radio
                   key={index}
                   value={answer.text}
-                  style={{
-                    ...styles.option,
-                    opacity: isDisabled ? 0.7 : 1,
-                    cursor: isDisabled ? 'not-allowed' : 'pointer'
-                  }}
+                  className={`option ${isDisabled ? 'disabled' : ''}`}
                 >
                   {answer.text}
                 </Radio>
@@ -415,7 +430,7 @@ export default function Play() {
 
   if (gameState.loading) {
     return (
-      <div style={styles.container}>
+      <div className="container">
         <Spin size="large" tip="Loading..." />
       </div>
     );
@@ -423,8 +438,8 @@ export default function Play() {
 
   if (gameState.error) {
     return (
-      <div style={styles.container}>
-        <Card style={styles.card}>
+      <div className="container">
+        <Card className="card">
           <Title level={4} type="danger">Error</Title>
           <Paragraph>{gameState.error}</Paragraph>
         </Card>
@@ -435,8 +450,8 @@ export default function Play() {
   // game not started
   if (!gameState.started || gameState.position === -1) {
     return (
-      <div style={styles.container}>
-        <Card style={styles.card}>
+      <div className="container">
+        <Card className="card">
           <Title level={3}>Waiting for game to start</Title>
           <Paragraph>
             Please wait for the admin to start the game...
@@ -449,11 +464,11 @@ export default function Play() {
 
   // game in progress
   return (
-    <div style={styles.container}>
-      <Card style={styles.card}>
+    <div className="container">
+      <Card className="card">
         {gameState.question && (
           <>
-            <div style={{ marginBottom: 16 }}>
+            <div className="progressContainer">
               <Progress
                 percent={Math.round((gameState.timeLeft / gameState.question.duration) * 100)}
                 format={() => `${gameState.timeLeft}s`}
@@ -468,7 +483,7 @@ export default function Play() {
             {renderSubmitButton()}
 
             {gameState.correctAnswers && (
-              <Card style={{ marginTop: 24, backgroundColor: '#f6ffed' }}>
+              <Card className="correctAnswers">
                 <Title level={5}>Correct Answers:</Title>
                 <Paragraph>
                   {gameState.correctAnswers.join(', ')}

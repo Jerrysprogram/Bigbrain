@@ -15,6 +15,7 @@ import {
 } from "antd";
 import { EditOutlined, DeleteOutlined, PlusOutlined } from "@ant-design/icons";
 import requests from "../../utills/requests";
+import './GameEdit.css';
 
 export default function GameEdit() {
   const { gameId } = useParams();
@@ -144,14 +145,8 @@ export default function GameEdit() {
   }
 
   return (
-    <div style={{ padding: 24, maxWidth: 1200, margin: "0 auto" }}>
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-        }}
-      >
+    <div className="gameEditContainer">
+      <div className="header">
         <Button onClick={() => navigate("/dashboard")}>
           ← Back to Dashboard
         </Button>
@@ -170,20 +165,20 @@ export default function GameEdit() {
       <List
         dataSource={questions}
         renderItem={(q, idx) => (
-          <Card key={q.id} style={{ marginBottom: 12 }}>
+          <Card key={q.id} className="questionCard">
             <Card.Meta
               title={`Question ${idx + 1}: ${q.text || "No question text"}`}
               description={`Type: ${q.type || "Unknown"}`}
             />
-            <div style={{ float: "right", marginTop: 8 }}>
+            <div className="questionOperations">
               <Link to={`/game/${gameId}/question/${q.id}`}>
-                <EditOutlined style={{ marginRight: 12, cursor: "pointer" }} />
+                <EditOutlined className="editIcon" />
               </Link>
               <Popconfirm
                 title="Are you sure to delete this question?"
                 onConfirm={() => handleDelete(q.id)}
               >
-                <DeleteOutlined style={{ color: "red", cursor: "pointer" }} />
+                <DeleteOutlined className="deleteIcon" />
               </Popconfirm>
             </div>
           </Card>

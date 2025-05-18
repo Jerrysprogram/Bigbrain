@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { LockOutlined, UserOutlined } from '@ant-design/icons';
 import { Button, Checkbox, Form, Input, message, Typography } from 'antd';
 import requests from '../../utills/requests';
+import './login.css';
 
 const { Title } = Typography;
 
@@ -29,10 +30,11 @@ export default function Login() {
         }
       });
   };
+  
   return (
-    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', padding: '0 16px' }}>
-      <div style={{ width: 360 }}>
-        <Title level={2} style={{ textAlign: 'center', marginBottom: 24 }}>Login</Title>
+    <div className="loginContainer">
+      <div className="loginForm">
+        <Title level={2} className="loginTitle">Login</Title>
         <Form
           name="login"
           initialValues={{ remember: true }}
@@ -51,7 +53,7 @@ export default function Login() {
             <Input prefix={<LockOutlined />} type="password" placeholder="Password" />
           </Form.Item>
           <Form.Item>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div className="formFooter">
               <Form.Item name="remember" valuePropName="checked" noStyle>
                 <Checkbox>Remember me</Checkbox>
               </Form.Item>

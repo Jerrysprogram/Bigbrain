@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Form, Input, Button, Card, message } from 'antd';
 import config from '../../../backend.config.json';
+import './Join.css';
 
 const BASE_URL = `http://localhost:${config.BACKEND_PORT}`;
 
@@ -44,20 +45,10 @@ export default function Join() {
   };
 
   return (
-    <div style={{ 
-      display: 'flex', 
-      justifyContent: 'center', 
-      alignItems: 'center', 
-      minHeight: '100vh',
-      background: '#f0f2f5'
-    }}>
+    <div className="joinContainer">
       <Card 
         title="Join Game Session" 
-        style={{ 
-          width: '100%',
-          maxWidth: 400,
-          boxShadow: '0 4px 8px rgba(0,0,0,0.1)'
-        }}
+        className="joinCard"
       >
         <Form
           form={form}

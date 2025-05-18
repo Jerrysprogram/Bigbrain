@@ -1,0 +1,30 @@
+.gameEditContainer {
+  padding: 24px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.questionCard {
+  margin-bottom: 12px;
+}
+
+.questionOperations {
+  float: right;
+  margin-top: 8px;
+}
+
+.editIcon {
+  margin-right: 12px;
+  cursor: pointer;
+}
+
+.deleteIcon {
+  color: red;
+  cursor: pointer;
+} 

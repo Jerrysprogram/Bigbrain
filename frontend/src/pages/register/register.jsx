@@ -1,6 +1,7 @@
 import { Button, Form, Input, message, Typography } from 'antd';
 import requests from '../../utills/requests';
 import { useNavigate, Link } from 'react-router-dom';
+import './register.css';
 
 const { Title } = Typography;
 
@@ -28,9 +29,9 @@ const Register = () => {
   };
 
   return (
-    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', padding: '0 16px' }}>
-      <div style={{ width: 600 }}>
-        <Title level={2} style={{ textAlign: 'center', marginBottom: 24 }}>Register</Title>
+    <div className="registerContainer">
+      <div className="registerForm">
+        <Title level={2} className="registerTitle">Register</Title>
         <Form
           form={form}
           name="register"
@@ -90,7 +91,7 @@ const Register = () => {
               Register
             </Button>
           </Form.Item>
-          <div style={{ textAlign: 'center', marginTop: 8 }}>
+          <div className="registerFooter">
             or <Link to="/login">Login</Link>
           </div>
         </Form>

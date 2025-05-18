@@ -1,0 +1,21 @@
+.registerContainer {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  padding: 0 16px;
+}
+
+.registerForm {
+  width: 600px;
+}
+
+.registerTitle {
+  text-align: center;
+  margin-bottom: 24px;
+}
+
+.registerFooter {
+  text-align: center;
+  margin-top: 8px;
+} 
