@@ -208,29 +208,52 @@ export default function SessionAdmin() {
     );
   }
 
-  // session ended, show results
-  // calculate scores
+  // session ended, show detailed player scores
   const safeResults = Array.isArray(results) ? results : [];
-  const scores = safeResults.map((player) => {
-    const score = player.answers.reduce(
-      (sum, ans, idx) =>
-        sum + (ans.correct ? status.questions[idx].points || 0 : 0),
-      0,
-    );
-    return { name: player.name, score };
-  });
-  const top5 = scores.sort((a, b) => b.score - a.score).slice(0, 5);
 
-  // Chart data: correct rate and average time per question
-  const correctRateData = (status.questions || []).map((q, idx) => {
-    const total = safeResults.length;
-    const correctCount = safeResults.filter(
-      (p) => p.answers[idx]?.correct,
-    ).length;
-    const correctRate =
-      total > 0 ? ((correctCount / total) * 100).toFixed(1) : 0;
-    return { question: `Q${idx + 1}`, correctRate: Number(correctRate) };
+  // 生成每位玩家的各题得分、总分和正确率
+  const playerResults = safeResults.map((p) => {
+    const perScores = p.answers.map((ans, idx) =>
+      ans.correct ? status.questions[idx].points || 0 : 0
+    );
+    const totalScore = perScores.reduce((sum, val) => sum + val, 0);
+    const correctCount = perScores.filter((v) => v > 0).length;
+    const accuracyRate =
+      status.questions.length > 0
+        ? ((correctCount / status.questions.length) * 100).toFixed(1)
+        : '0.0';
+    const row = { name: p.name, totalScore, accuracyRate };
+    perScores.forEach((score, idx) => {
+      row[`Q${idx + 1}`] = score;
+    });
+    return row;
   });
+
+  // 取前五名
+  const tableData = playerResults
+    .sort((a, b) => b.totalScore - a.totalScore)
+    .slice(0, 5);
+
+  // 转置表格：展示单一玩家，题目为行，分数列，并在底部显示总分和正确率
+  const firstPlayer = tableData[0] || {};
+  const transposedColumns = [
+    { title: 'Question', dataIndex: 'question', key: 'question' },
+    { title: 'Score', dataIndex: 'score', key: 'score' },
+  ];
+  const transposedData = status.questions.map((q, idx) => {
+    const correctOption = Array.isArray(q.correctAnswers)
+      ? q.correctAnswers.join(', ')
+      : q.correctAnswers;
+    return {
+      question: `Question ${idx + 1} (Correct: ${correctOption})`,
+      score: firstPlayer[`Q${idx + 1}`] || 0,
+    };
+  });
+  // Bottom rows: total score and accuracy
+  transposedData.push({ question: 'Total Score', score: firstPlayer.totalScore || 0 });
+  transposedData.push({ question: 'Accuracy (%)', score: firstPlayer.accuracyRate || '0.0' });
+
+  // 恢复平均答题时间数据
   const avgTimeData = (status.questions || []).map((q, idx) => {
     const times = safeResults
       .map((p) => {
@@ -252,14 +275,9 @@ export default function SessionAdmin() {
     return { question: `Q${idx + 1}`, avgTime: Number(avgTime) };
   });
 
-  const columns = [
-    { title: "Player", dataIndex: "name", key: "name" },
-    { title: "Score", dataIndex: "score", key: "score" },
-  ];
-
   return (
     <div style={{ padding: 24 }}>
-      <Title level={3}>Results for Session {sessionId}</Title>
+      <Title level={3}>Results for {firstPlayer.name} (Session ID: {sessionId})</Title>
       <Button
         type="primary"
         style={{ marginBottom: 16 }}
@@ -268,46 +286,24 @@ export default function SessionAdmin() {
         Back to Dashboard
       </Button>
       <Table
-        dataSource={top5}
-        columns={columns}
-        rowKey="name"
+        dataSource={transposedData}
+        columns={transposedColumns}
+        rowKey="question"
         pagination={false}
       />
       {/* Charts below table */}
       <Row gutter={[16, 16]} style={{ marginTop: 24 }}>
         <Col xs={24} lg={12}>
-          <Card title="Question Accuracy">
-            <div style={{ width: "100%", height: 250 }}>
-              <ResponsiveContainer>
-                <BarChart
-                  data={correctRateData}
-                  margin={{ top: 10, right: 10, left: 0, bottom: 10 }}
-                >
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="question" label={{ value: 'Question Number', position: 'insideBottom', offset: -5 }} />
-                  <YAxis label={{ value: 'Accuracy (%)', angle: -90, position: 'insideLeft' }} />
-                  <Tooltip />
-                  <Bar
-                    dataKey="correctRate"
-                    name="Correct Rate"
-                    fill="#1890ff"
-                  />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          </Card>
-        </Col>
-        <Col xs={24} lg={12}>
-          <Card title="Average Response Time">
-            <div style={{ width: "100%", height: 250 }}>
+          <Card title="Average Response Time (s)">
+            <div style={{ width: "100%", height: 300 }}>
               <ResponsiveContainer>
                 <LineChart
                   data={avgTimeData}
-                  margin={{ top: 10, right: 10, left: 0, bottom: 10 }}
+                  margin={{ top: 20, right: 20, left: 60, bottom: 20 }}
                 >
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="question" label={{ value: 'Question Number', position: 'insideBottom', offset: -5 }} />
-                  <YAxis label={{ value: 'Average Response Time (s)', angle: -90, position: 'insideLeft' }} />
+                  <YAxis label={{ value: 'Average Response Time (s)', angle: -90, position: 'outsideLeft', offset: 10 }} />
                   <Tooltip />
                   <Line
                     type="monotone"
